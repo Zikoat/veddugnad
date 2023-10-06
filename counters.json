@@ -39,37 +39,37 @@
     },
     "2023-10-06": {
         "1": {
-            "name": "aoeu",
-            "score": 14,
+            "name": "martin",
+            "score": 16,
             "createdAt": null,
             "updatedAt": null
         },
         "2": {
-            "name": null,
-            "score": 6,
+            "name": "patrik",
+            "score": 7,
             "createdAt": null,
             "updatedAt": null
         },
         "3": {
-            "name": null,
+            "name": "sigurd",
             "score": 6,
             "createdAt": null,
             "updatedAt": null
         },
         "4": {
-            "name": null,
+            "name": "tobias",
             "score": 5,
             "createdAt": null,
             "updatedAt": null
         },
         "5": {
-            "name": null,
+            "name": "syver",
             "score": 3,
             "createdAt": null,
             "updatedAt": null
         },
         "6": {
-            "name": null,
+            "name": "peter",
             "score": 3,
             "createdAt": null,
             "updatedAt": null

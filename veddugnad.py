@@ -80,7 +80,7 @@ class AppDemo(QWidget):
 
         # Adding leaderboard
         self.leaderboard = LeaderboardWidget()
-        main_layout.addWidget(self.leaderboard)
+        main_layout.addWidget(self.leaderboard,1)
 
         # Create an attribute to hold player boxes
         self.player_boxes = [] 
@@ -96,7 +96,7 @@ class AppDemo(QWidget):
 
             player_boxes_layout.addLayout(pair_layout)
 
-        main_layout.addLayout(player_boxes_layout)
+        main_layout.addLayout(player_boxes_layout,2)
         self.setLayout(main_layout)
 
         self.update_ui()
@@ -178,12 +178,12 @@ class PlayerBox(QGroupBox):
 
         # Adding score label
         self.score_label = QLabel()
-        self.score_label.setStyleSheet("font-size: 40px;")
+        self.score_label.setStyleSheet("font-size: 80px;")
         score_speed_container.addWidget(self.score_label, alignment=Qt.AlignCenter)
 
         # Adding speed label
-        self.speed_label = QLabel()
-        score_speed_container.addWidget(self.speed_label, alignment=Qt.AlignCenter)
+        # self.speed_label = QLabel()
+        # score_speed_container.addWidget(self.speed_label, alignment=Qt.AlignCenter)
 
         self.layout.addLayout(score_speed_container)
 
@@ -246,14 +246,14 @@ class PlayerBox(QGroupBox):
         player_data = scores[today][self.button_id]
         self.score_label.setText(f"{player_data['score']}")
         self.name_input.setText(player_data['name'] if player_data['name'] else '')
-        if player_data['score'] > 1 and player_data['createdAt'] and player_data['updatedAt']:
-            start_time = datetime.fromisoformat(player_data['createdAt'])
-            end_time = datetime.fromisoformat(player_data['updatedAt'])
-            duration = (end_time - start_time).total_seconds()
-            speed = duration / (player_data['score'] - 1)
-            self.speed_label.setText(f"Speed: {speed:.2f} secs/item")
-        else:
-            self.speed_label.setText("")
+        # if player_data['score'] > 1 and player_data['createdAt'] and player_data['updatedAt']:
+        #     start_time = datetime.fromisoformat(player_data['createdAt'])
+        #     end_time = datetime.fromisoformat(player_data['updatedAt'])
+        #     duration = (end_time - start_time).total_seconds()
+        #     speed = duration / (player_data['score'] - 1)
+        #     self.speed_label.setText(f"Speed: {speed:.2f} secs/item")
+        # else:
+        #     self.speed_label.setText("")
 
 # Function to create leaderboard
 def create_leaderboard():
