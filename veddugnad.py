@@ -1,9 +1,5 @@
-
-from PyQt5.QtCore import QTimer, QDateTime
-from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtCore import Qt, pyqtSignal, QObject
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QGroupBox, QGridLayout
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QScrollArea, QGridLayout, QGroupBox
+from PyQt5.QtCore import QObject, pyqtSignal,QTimer,QTimer,pyqtSignal, QObject
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QGroupBox, QGridLayout,QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QScrollArea, QGridLayout, QGroupBox
 from datetime import datetime
 import json
 import os
@@ -74,8 +70,10 @@ def save_scores():
 class AppDemo(QWidget):
     def __init__(self):
         super().__init__()
+        self.hotkey_signal = HotkeySignal()
         self.initUI()
         update_signal.update_ui_signal.connect(self.update_ui)
+        self.hotkey_signal.hotkey_pressed.connect(self.execute_function)
 
     def initUI(self):
         layout = QGridLayout()
@@ -83,7 +81,7 @@ class AppDemo(QWidget):
         self.leaderboard = LeaderboardWidget()
         layout.addWidget(self.leaderboard, 0, 0)
 
-        self.player_boxes = [PlayerBox(str(i)) for i in range(1, 7)]
+        self.player_boxes = [PlayerBox(str(i), self.hotkey_signal) for i in range(1, 7)]
         for i, player_box in enumerate(self.player_boxes):
             layout.addWidget(player_box, i, 1)
 
@@ -95,6 +93,10 @@ class AppDemo(QWidget):
             player_box.update_ui()
         self.leaderboard.update_ui()
         save_scores()
+
+    def execute_function(self, func):
+        func()
+
 
 
 # Leaderboard widget
@@ -123,15 +125,25 @@ class LeaderboardWidget(QScrollArea):
             self.layout.addWidget(player_label)
 
 
+
+class HotkeySignal(QObject):
+    # This signal will be emitted when a hotkey is pressed
+    hotkey_pressed = pyqtSignal(object)  # The signal carries a callable object
+
+
 # Player box widget
 class PlayerBox(QGroupBox):
-    def __init__(self, button_id):
+    def __init__(self, button_id,hotkey_signal):
         super().__init__()
         self.button_id = button_id
+        self.hotkey_signal = hotkey_signal
+
         self.timer = QTimer()
         self.timer.timeout.connect(self.timeout)
         self.timer.setInterval(BUTTON_TIMEOUT_SECONDS * 1000)  
-        keyboard.add_hotkey('f1', self.player_action, args=(1,))
+
+        # add keyboard hotkeys for f1 through f6
+        keyboard.add_hotkey(f'f{button_id}', self.on_hotkey_pressed)
 
         self.initUI()
 
@@ -154,16 +166,33 @@ class PlayerBox(QGroupBox):
         self.layout.addWidget(self.decrement_button)
         self.setLayout(self.layout)
 
+    def on_hotkey_pressed(self):
+        # Emit the signal with a lambda function as an argument that calls your update method
+        self.hotkey_signal.hotkey_pressed.emit(lambda: self.press_button())
+
     def update_name(self):
         scores[today][self.button_id]["name"] = self.name_input.text()
         update_signal.update_ui_signal.emit()
 
-    def increment_score(self):
+    def press_button(self):
         if not self.timer.isActive():
             scores[today][self.button_id]["score"] += 1
             self.setStyleSheet("background-color: darkgrey;")  # Change to a darker color
+            self.increment_button.setDisabled(True)  
+            self.decrement_button.setDisabled(True)  
             self.timer.start()
             update_signal.update_ui_signal.emit()
+
+    def timeout(self):
+        self.timer.stop()
+        self.setStyleSheet("")  # Reset to the original style
+        self.increment_button.setDisabled(False)  
+        self.decrement_button.setDisabled(False)  
+        self.update_ui()
+
+    def increment_score(self):
+        scores[today][self.button_id]["score"] += 1
+        update_signal.update_ui_signal.emit()
 
 
     def decrement_score(self):
@@ -183,11 +212,6 @@ class PlayerBox(QGroupBox):
             self.speed_label.setText(f"Speed: {speed:.2f} secs/item")
         else:
             self.speed_label.setText("")
-
-    def timeout(self):
-        self.timer.stop()
-        self.setStyleSheet("")  # Reset to the original style
-        self.update_ui()
 
 # Function to create leaderboard
 def create_leaderboard():
