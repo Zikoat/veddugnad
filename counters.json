@@ -1,0 +1,40 @@
+{
+    "2023-10-06": {
+        "1": {
+            "name": null,
+            "score": 5,
+            "createdAt": null,
+            "updatedAt": null
+        },
+        "2": {
+            "name": "aoeusn",
+            "score": 1,
+            "createdAt": null,
+            "updatedAt": null
+        },
+        "3": {
+            "name": null,
+            "score": 0,
+            "createdAt": null,
+            "updatedAt": null
+        },
+        "4": {
+            "name": null,
+            "score": 0,
+            "createdAt": null,
+            "updatedAt": null
+        },
+        "5": {
+            "name": null,
+            "score": 0,
+            "createdAt": null,
+            "updatedAt": null
+        },
+        "6": {
+            "name": null,
+            "score": 0,
+            "createdAt": null,
+            "updatedAt": null
+        }
+    }
+}
