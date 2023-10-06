@@ -1,5 +1,5 @@
-from PyQt5.QtCore import QObject, pyqtSignal,QTimer,QTimer,pyqtSignal, QObject
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QGroupBox, QGridLayout,QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QScrollArea, QGridLayout, QGroupBox
+from PyQt5.QtCore import QObject, pyqtSignal,QTimer,QTimer,pyqtSignal, QObject,Qt
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QGroupBox, QGridLayout,QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QScrollArea, QGridLayout, QGroupBox,QHBoxLayout
 from datetime import datetime
 import json
 import os
@@ -76,16 +76,29 @@ class AppDemo(QWidget):
         self.hotkey_signal.hotkey_pressed.connect(self.execute_function)
 
     def initUI(self):
-        layout = QGridLayout()
+        main_layout = QHBoxLayout()
 
+        # Adding leaderboard
         self.leaderboard = LeaderboardWidget()
-        layout.addWidget(self.leaderboard, 0, 0)
+        main_layout.addWidget(self.leaderboard)
 
-        self.player_boxes = [PlayerBox(str(i), self.hotkey_signal) for i in range(1, 7)]
-        for i, player_box in enumerate(self.player_boxes):
-            layout.addWidget(player_box, i, 1)
+        # Create an attribute to hold player boxes
+        self.player_boxes = [] 
 
-        self.setLayout(layout)
+        player_boxes_layout = QHBoxLayout()
+        for i in range(0, 6, 2):  # Creating pairs
+            pair_layout = QVBoxLayout()
+
+            for j in range(2):  # Two player boxes per pair
+                player_box = PlayerBox(str(i + j + 1), self.hotkey_signal)
+                pair_layout.addWidget(player_box)
+                self.player_boxes.append(player_box)  # Add player box to the list
+
+            player_boxes_layout.addLayout(pair_layout)
+
+        main_layout.addLayout(player_boxes_layout)
+        self.setLayout(main_layout)
+
         self.update_ui()
 
     def update_ui(self):
@@ -149,21 +162,50 @@ class PlayerBox(QGroupBox):
 
     def initUI(self):
         self.layout = QVBoxLayout()
-        self.score_label = QLabel()
-        self.speed_label = QLabel()
+
+        # Adding name input
         self.name_input = QLineEdit()
         self.name_input.textChanged.connect(self.update_name)
-        self.increment_button = QPushButton('+')
-        self.increment_button.clicked.connect(self.increment_score)
+        self.name_input.setStyleSheet("""
+            font-size: 20px;
+            height: 40px;
+            padding: 5px 10px;
+        """)
+        self.layout.addWidget(self.name_input)
+
+        # Creating a container for score and speed, centered horizontally
+        score_speed_container = QHBoxLayout()
+
+        # Adding score label
+        self.score_label = QLabel()
+        self.score_label.setStyleSheet("font-size: 40px;")
+        score_speed_container.addWidget(self.score_label, alignment=Qt.AlignCenter)
+
+        # Adding speed label
+        self.speed_label = QLabel()
+        score_speed_container.addWidget(self.speed_label, alignment=Qt.AlignCenter)
+
+        self.layout.addLayout(score_speed_container)
+
+        # Creating a container for increment/decrement buttons, centered horizontally
+        inc_dec_container = QHBoxLayout()
+
+        # Adding decrement button
         self.decrement_button = QPushButton('-')
         self.decrement_button.clicked.connect(self.decrement_score)
-        
-        self.layout.addWidget(self.score_label)
-        self.layout.addWidget(self.speed_label)
-        self.layout.addWidget(self.name_input)
-        self.layout.addWidget(QLabel(f"Button ID: {self.button_id}"))
-        self.layout.addWidget(self.increment_button)
-        self.layout.addWidget(self.decrement_button)
+        self.decrement_button.setMaximumWidth(30)  # Set the maximum width to 30 pixels
+        inc_dec_container.addWidget(self.decrement_button)
+
+        # Adding increment button
+        self.increment_button = QPushButton('+')
+        self.increment_button.clicked.connect(self.increment_score)
+        self.increment_button.setMaximumWidth(30)  # Set the maximum width to 30 pixels
+        inc_dec_container.addWidget(self.increment_button)
+
+        inc_dec_container.setAlignment(Qt.AlignCenter)  # Set alignment property here
+
+        self.layout.addLayout(inc_dec_container)
+
         self.setLayout(self.layout)
 
     def on_hotkey_pressed(self):
@@ -202,7 +244,7 @@ class PlayerBox(QGroupBox):
 
     def update_ui(self):
         player_data = scores[today][self.button_id]
-        self.score_label.setText(f"Score: {player_data['score']}")
+        self.score_label.setText(f"{player_data['score']}")
         self.name_input.setText(player_data['name'] if player_data['name'] else '')
         if player_data['score'] > 1 and player_data['createdAt'] and player_data['updatedAt']:
             start_time = datetime.fromisoformat(player_data['createdAt'])
