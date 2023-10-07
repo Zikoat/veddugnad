@@ -3,76 +3,76 @@
         "1": {
             "name": null,
             "score": 12,
-            "createdAt": null,
-            "updatedAt": null
+            "startedAt": null,
+            "stoppedAt": null
         },
         "2": {
             "name": "aoeusn",
             "score": 5,
-            "createdAt": null,
-            "updatedAt": null
+            "startedAt": null,
+            "stoppedAt": null
         },
         "3": {
             "name": null,
             "score": 2,
-            "createdAt": null,
-            "updatedAt": null
+            "startedAt": null,
+            "stoppedAt": null
         },
         "4": {
             "name": null,
             "score": 1,
-            "createdAt": null,
-            "updatedAt": null
+            "startedAt": null,
+            "stoppedAt": null
         },
         "5": {
             "name": null,
             "score": 1,
-            "createdAt": null,
-            "updatedAt": null
+            "startedAt": null,
+            "stoppedAt": null
         },
         "6": {
             "name": null,
             "score": 1,
-            "createdAt": null,
-            "updatedAt": null
+            "startedAt": null,
+            "stoppedAt": null
         }
     },
     "2023-10-06": {
         "1": {
             "name": "martin",
-            "score": 16,
-            "createdAt": null,
-            "updatedAt": null
+            "score": 25,
+            "startedAt": "2023-10-06T18:19:57.105340",
+            "stoppedAt": "2023-10-06T22:51:41.131142"
         },
         "2": {
             "name": "patrik",
-            "score": 7,
-            "createdAt": null,
-            "updatedAt": null
+            "score": 15,
+            "startedAt": "2023-10-06T18:19:58.505818",
+            "stoppedAt": "2023-10-06T22:51:42.454666"
         },
         "3": {
             "name": "sigurd",
-            "score": 6,
-            "createdAt": null,
-            "updatedAt": null
+            "score": 24,
+            "startedAt": "2023-10-06T18:19:59.334564",
+            "stoppedAt": "2023-10-06T22:51:43.025610"
         },
         "4": {
             "name": "tobias",
-            "score": 5,
-            "createdAt": null,
-            "updatedAt": null
+            "score": 9,
+            "startedAt": "2023-10-06T18:19:59.819047",
+            "stoppedAt": "2023-10-06T22:51:43.480486"
         },
         "5": {
             "name": "syver",
-            "score": 3,
-            "createdAt": null,
-            "updatedAt": null
+            "score": 8,
+            "startedAt": "2023-10-06T18:20:00.178844",
+            "stoppedAt": "2023-10-06T22:51:43.827174"
         },
         "6": {
             "name": "peter",
-            "score": 3,
-            "createdAt": null,
-            "updatedAt": null
+            "score": 6,
+            "startedAt": "2023-10-06T18:20:00.882012",
+            "stoppedAt": "2023-10-06T22:51:44.142729"
         }
     }
 }

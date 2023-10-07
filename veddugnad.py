@@ -1,5 +1,6 @@
 from PyQt5.QtCore import QObject, pyqtSignal,QTimer,QTimer,pyqtSignal, QObject,Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QGroupBox, QGridLayout,QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QScrollArea, QGridLayout, QGroupBox,QHBoxLayout
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView
 from datetime import datetime
 import json
 import os
@@ -9,6 +10,11 @@ import sys
 import threading
 import time
 import keyboard
+
+import locale
+from PyQt5.QtGui import QPalette, QBrush, QPixmap
+
+
 
 
 # File paths
@@ -21,6 +27,8 @@ counter_last_modified = 0
 bg_last_modified = 0
 
 BUTTON_TIMEOUT_SECONDS = 3
+
+TEST_MODE = True
 
 def backup_file(file_path, backup_folder):
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -49,7 +57,10 @@ def job():
 
 # This function will contain the infinite loop to run scheduled jobs
 def start_backup_job():
-    schedule.every().day.at("00:00").do(job)  # Schedule the job
+    if TEST_MODE:
+        schedule.every(10).seconds.do(job)
+    else:
+        schedule.every().day.at("00:00").do(job)
     while True:
         schedule.run_pending()
         time.sleep(1)
@@ -73,6 +84,7 @@ class AppDemo(QWidget):
         self.hotkey_signal = HotkeySignal()
         self.initUI()
         update_signal.update_ui_signal.connect(self.update_ui)
+        
         self.hotkey_signal.hotkey_pressed.connect(self.execute_function)
 
     def initUI(self):
@@ -97,9 +109,21 @@ class AppDemo(QWidget):
             player_boxes_layout.addLayout(pair_layout)
 
         main_layout.addLayout(player_boxes_layout,2)
+        # Set background image
+        palette = QPalette()
+        pixmap = QPixmap("bg.png").scaled(self.width(), self.height(), Qt.IgnoreAspectRatio)
+        palette.setBrush(QPalette.Background, QBrush(pixmap))
+        self.setPalette(palette)
+
         self.setLayout(main_layout)
 
         self.update_ui()
+    def resizeEvent(self, event):
+        # Update the background image to fit the new size of the window
+        palette = QPalette()
+        pixmap = QPixmap("bg.png").scaled(self.width(), self.height(), Qt.IgnoreAspectRatio)
+        palette.setBrush(QPalette.Background, QBrush(pixmap))
+        self.setPalette(palette)
 
     def update_ui(self):
         for player_box in self.player_boxes:
@@ -120,24 +144,27 @@ class LeaderboardWidget(QScrollArea):
         self.initUI()
 
     def initUI(self):
-        self.layout = QVBoxLayout()
-        content = QWidget()
-        content.setLayout(self.layout)
-        self.setWidget(content)
+        self.table = QTableWidget()
+        self.setWidget(self.table)
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels([ "Dato", "Navn", "Sekker", "Fart"])
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
 
     def update_ui(self):
-        # Clear the current UI
-        for i in reversed(range(self.layout.count())): 
-            widget = self.layout.itemAt(i).widget()
-            widget.setParent(None)
+        # Clear the current table content
+        self.table.setRowCount(0)
 
         # Add updated data
         leaderboard = create_leaderboard()
         for entry in leaderboard:
-            player_label = QLabel(f"Rank: {entry[0]}, Date: {entry[1]}, Name: {entry[2]}, Score: {entry[3]}, Speed: {entry[4]:.2f}")
-            self.layout.addWidget(player_label)
-
-
+            row_position = self.table.rowCount()
+            self.table.insertRow(row_position)
+            
+            self.table.setItem(row_position, 0, QTableWidgetItem(entry[0]))
+            self.table.setItem(row_position, 1, QTableWidgetItem(entry[1]))
+            self.table.setItem(row_position, 2, QTableWidgetItem(str(entry[2])))
+            self.table.setItem(row_position, 3, QTableWidgetItem(f"{entry[3]:.2f} s"))
 
 class HotkeySignal(QObject):
     # This signal will be emitted when a hotkey is pressed
@@ -174,16 +201,16 @@ class PlayerBox(QGroupBox):
         self.layout.addWidget(self.name_input)
 
         # Creating a container for score and speed, centered horizontally
-        score_speed_container = QHBoxLayout()
+        score_speed_container = QVBoxLayout()
 
-        # Adding score label
+        # Adding score label with increased font size
         self.score_label = QLabel()
-        self.score_label.setStyleSheet("font-size: 80px;")
+        self.score_label.setStyleSheet("font-size: 80px;")  
         score_speed_container.addWidget(self.score_label, alignment=Qt.AlignCenter)
 
-        # Adding speed label
-        # self.speed_label = QLabel()
-        # score_speed_container.addWidget(self.speed_label, alignment=Qt.AlignCenter)
+        # Adding speed label below score label
+        self.speed_label = QLabel()
+        score_speed_container.addWidget(self.speed_label, alignment=Qt.AlignCenter)
 
         self.layout.addLayout(score_speed_container)
 
@@ -213,15 +240,29 @@ class PlayerBox(QGroupBox):
         self.hotkey_signal.hotkey_pressed.emit(lambda: self.press_button())
 
     def update_name(self):
+        today = getToday()
         scores[today][self.button_id]["name"] = self.name_input.text()
         update_signal.update_ui_signal.emit()
 
     def press_button(self):
         if not self.timer.isActive():
+            today = getToday()
             scores[today][self.button_id]["score"] += 1
             self.setStyleSheet("background-color: darkgrey;")  # Change to a darker color
+
+            # Disable the increment and decrement buttons during the timeout period
             self.increment_button.setDisabled(True)  
             self.decrement_button.setDisabled(True)  
+
+            current_timestamp = datetime.now().isoformat()  # Get the current timestamp in ISO format
+            
+            # Update startedAt if it is null
+            if scores[today][self.button_id]["startedAt"] is None:
+                scores[today][self.button_id]["startedAt"] = current_timestamp
+                
+            # Always update stoppedAt when the button is pressed
+            scores[today][self.button_id]["stoppedAt"] = current_timestamp
+
             self.timer.start()
             update_signal.update_ui_signal.emit()
 
@@ -233,36 +274,39 @@ class PlayerBox(QGroupBox):
         self.update_ui()
 
     def increment_score(self):
+        today = getToday()
         scores[today][self.button_id]["score"] += 1
         update_signal.update_ui_signal.emit()
 
 
     def decrement_score(self):
+        today = getToday()
         if scores[today][self.button_id]["score"] > 0:
             scores[today][self.button_id]["score"] -= 1
         update_signal.update_ui_signal.emit()
 
     def update_ui(self):
+        today = getToday()
         player_data = scores[today][self.button_id]
         self.score_label.setText(f"{player_data['score']}")
         self.name_input.setText(player_data['name'] if player_data['name'] else '')
-        # if player_data['score'] > 1 and player_data['createdAt'] and player_data['updatedAt']:
-        #     start_time = datetime.fromisoformat(player_data['createdAt'])
-        #     end_time = datetime.fromisoformat(player_data['updatedAt'])
-        #     duration = (end_time - start_time).total_seconds()
-        #     speed = duration / (player_data['score'] - 1)
-        #     self.speed_label.setText(f"Speed: {speed:.2f} secs/item")
-        # else:
-        #     self.speed_label.setText("")
+        if player_data['score'] > 1 and player_data['startedAt'] and player_data['stoppedAt']:
+            start_time = datetime.fromisoformat(player_data['startedAt'])
+            end_time = datetime.fromisoformat(player_data['stoppedAt'])
+            duration = (end_time - start_time).total_seconds()
+            speed = duration / (player_data['score'] - 1)
+            self.speed_label.setText(f"{speed:.2f} sekunder per sekk")
+        else:
+            self.speed_label.setText("")
 
 # Function to create leaderboard
 def create_leaderboard():
     leaderboard = []
     for date, buttons in scores.items():
         for button_id, data in buttons.items():
-            if data['createdAt'] and data['updatedAt'] and data['score'] > 0:
-                start_time = datetime.fromisoformat(data['createdAt'])
-                end_time = datetime.fromisoformat(data['updatedAt'])
+            if data['startedAt'] and data['stoppedAt'] and data['score'] > 0:
+                start_time = datetime.fromisoformat(data['startedAt'])
+                end_time = datetime.fromisoformat(data['stoppedAt'])
                 duration = (end_time - start_time).total_seconds()
 
                 # Adjusting for the first item
@@ -271,37 +315,46 @@ def create_leaderboard():
                 else:
                     speed = duration
                 
-                date_norwegian_format = datetime.strptime(date, "%Y-%m-%d").strftime("%d-%m-%Y")
-                rank = len(leaderboard) + 1
-                leaderboard.append((rank, date_norwegian_format, data['name'], data['score'], speed))
+                date_norwegian_format = datetime.strptime(date, "%Y-%m-%d").strftime("%a %d.%m")
+                leaderboard.append(( date_norwegian_format, data['name'], data['score'], speed))
 
     # Sorting by score in descending order
     leaderboard.sort(key=lambda x: x[3], reverse=True)
     return leaderboard
 
-# Load scores from file if exists or initialize with today's date and null/0 values
-today = datetime.now().strftime('%Y-%m-%d')
+def getToday():
+    return  datetime.now().strftime('%Y-%m-%d')
 
-if os.path.exists(COUNT_FILE):
-    with open(COUNT_FILE, 'r') as f:
-        scores = json.load(f)
-        if today not in scores:
-            scores[today] = {
-                str(i): {"name": None, "score": 0, "createdAt": None, "updatedAt": None} for i in range(1, 7)
+
+def bootstrap():
+    global scores
+    locale.setlocale(locale.LC_ALL, 'nb_NO.UTF-8')  # 'nb_NO' is the locale for Norwegian Bokmål
+
+    # Load scores from file if exists or initialize with today's date and null/0 values
+    today = getToday()
+
+    if os.path.exists(COUNT_FILE):
+        with open(COUNT_FILE, 'r') as f:
+            scores = json.load(f)
+            if today not in scores:
+                scores[today] = {
+                    str(i): {"name": None, "score": 0, "startedAt": None, "stoppedAt": None} for i in range(1, 7)
+                }
+    else:
+        scores = {
+            today: {
+                str(i): {"name": None, "score": 0, "startedAt": None, "stoppedAt": None} for i in range(1, 7)
             }
-else:
-    scores = {
-        today: {
-            str(i): {"name": None, "score": 0, "createdAt": None, "updatedAt": None} for i in range(1, 7)
         }
-    }
 
-# Start the backup job in a separate thread
-backup_thread = threading.Thread(target=start_backup_job)
-backup_thread.start()
+    # Start the backup job in a separate thread
+    backup_thread = threading.Thread(target=start_backup_job)
+    backup_thread.start()
 
-# Start the GUI in the main thread
-app = QApplication(sys.argv)
-demo = AppDemo()
-demo.show()
-sys.exit(app.exec_())
+    # Start the GUI in the main thread
+    app = QApplication(sys.argv)
+    demo = AppDemo()
+    demo.show()
+    sys.exit(app.exec_())
+
+bootstrap()
