@@ -152,6 +152,24 @@ class PlayerBox(QGroupBox):
 
         self.layout.addLayout(score_speed_container)
         self.setLayout(self.layout)
+    def update_ui(self):
+        today = getToday()
+        player_data = global_repo.get_player_score_data(today, self.button_id)
+
+        if player_data:
+            name, score, startedAt, stoppedAt, speed = player_data
+            self.score_label.setText(str(score))
+            self.name_input.setText(name if name else '')
+            
+            if score > 1 and startedAt and stoppedAt:
+                self.speed_label.setText(f"{speed:.2f} sekunder per sekk")
+            else:
+                self.speed_label.setText("")
+        else:
+            # Handle the case where no data is returned
+            self.score_label.setText("0")
+            self.name_input.setText("")
+            self.speed_label.setText("")
 
     def on_hotkey_pressed(self):
         # Emit the signal with a lambda function as an argument that calls your update method
@@ -176,24 +194,6 @@ class PlayerBox(QGroupBox):
         self.setStyleSheet("")  # Reset to the original style
         self.update_ui()
 
-    def update_ui(self):
-        today = getToday()
-        player_data = global_repo.get_player_score_data(today, self.button_id)
-
-        if player_data:
-            name, score, startedAt, stoppedAt, speed = player_data
-            self.score_label.setText(str(score))
-            self.name_input.setText(name if name else '')
-            
-            if score > 1 and startedAt and stoppedAt:
-                self.speed_label.setText(f"{speed:.2f} sekunder per sekk")
-            else:
-                self.speed_label.setText("")
-        else:
-            # Handle the case where no data is returned
-            self.score_label.setText("0")
-            self.name_input.setText("")
-            self.speed_label.setText("")
 
 def create_leaderboard():
     leaderboard_data = global_repo.get_leaderboard()
