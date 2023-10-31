@@ -1,7 +1,13 @@
 .PHONY: install run
 
+activate:
+	.\myenv\scripts\activate
+
 install:
-	pip install -r requirements.txt
-	
+	make activate && python.exe -m pip install --upgrade pip && pip install -r requirements.txt
+
 run: 
-	python veddugnad.py
+	make activate && python veddugnad.py
+
+createdb:
+	make activate && sqlite3 highscores.db < create_db.sql

@@ -10,12 +10,9 @@ import sys
 import threading
 import time
 import keyboard
-
 import locale
 from PyQt5.QtGui import QPalette, QBrush, QPixmap
-
-
-
+import sqlite3
 
 # File paths
 COUNT_FILE = 'counters.json'
@@ -326,32 +323,36 @@ def getToday():
     return  datetime.now().strftime('%Y-%m-%d')
 
 
+class ScoreRepository:
+    def __init__(self):
+        self.db_path = 'highscores.db'
+
+    def _get_connection(self):
+        return sqlite3.connect(self.db_path)
+
+    def update_name(self, button_id, new_name, date):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT player_id FROM player_button_date WHERE button_id=? AND date=?", (button_id, date))
+            player_id_record = cursor.fetchone()
+            if player_id_record:
+                player_id = player_id_record[0]
+                cursor.execute("UPDATE players SET name=? WHERE id=?", (new_name, player_id))
+                conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
 def bootstrap():
-    global scores
-    locale.setlocale(locale.LC_ALL, 'nb_NO.UTF-8')  # 'nb_NO' is the locale for Norwegian Bokmål
+    global global_repo
+    locale.setlocale(locale.LC_ALL, 'nb_NO.UTF-8')  # Norwegian Bokmål locale
 
-    # Load scores from file if exists or initialize with today's date and null/0 values
-    today = getToday()
+    global_repo = ScoreRepository()
 
-    if os.path.exists(COUNT_FILE):
-        with open(COUNT_FILE, 'r') as f:
-            scores = json.load(f)
-            if today not in scores:
-                scores[today] = {
-                    str(i): {"name": None, "score": 0, "startedAt": None, "stoppedAt": None} for i in range(1, 7)
-                }
-    else:
-        scores = {
-            today: {
-                str(i): {"name": None, "score": 0, "startedAt": None, "stoppedAt": None} for i in range(1, 7)
-            }
-        }
-
-    # Start the backup job in a separate thread
     backup_thread = threading.Thread(target=start_backup_job)
     backup_thread.start()
 
-    # Start the GUI in the main thread
     app = QApplication(sys.argv)
     demo = AppDemo()
     demo.show()
