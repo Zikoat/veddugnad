@@ -317,23 +317,23 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def increment_score(self, player_id, button_id, date):
+    def increment_score(self, button_id, date):
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            # Ensure there is a record in player_button_date
+            # Check if there's a player_button_date entry for today and the given button
             cursor.execute("""
-                INSERT INTO player_button_date (player_id, button_id, date)
-                VALUES (?, ?, ?)
-                ON CONFLICT(player_id, button_id, date) DO NOTHING
-            """, (player_id, button_id, date))
-
-            # Insert a new button press
-            cursor.execute("""
-                INSERT INTO button_presses (player_id, timestamp)
-                VALUES (?, CURRENT_TIMESTAMP)
-            """, (player_id,))
-            conn.commit()
+                SELECT 1 FROM player_button_date 
+                WHERE button_id = ? AND date = ?
+            """, (button_id, date))
+            
+            if cursor.fetchone():
+                # Insert a new button press
+                cursor.execute("""
+                    INSERT INTO button_presses (button_id, timestamp)
+                    VALUES (?, CURRENT_TIMESTAMP)
+                """, (button_id,))
+                conn.commit()
         finally:
             cursor.close()
             conn.close()
