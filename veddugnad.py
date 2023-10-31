@@ -1,11 +1,10 @@
 from PyQt5.QtCore import QObject, pyqtSignal,QTimer,QTimer,pyqtSignal, QObject,Qt
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QGroupBox, QGridLayout,QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QScrollArea, QGridLayout, QGroupBox,QHBoxLayout
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QGroupBox, QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QScrollArea, QGroupBox,QHBoxLayout,QTableWidget, QTableWidgetItem, QHeaderView
+from PyQt5.QtGui import QPalette, QBrush, QPixmap
 from datetime import datetime
 import sys
 import keyboard
 import locale
-from PyQt5.QtGui import QPalette, QBrush, QPixmap
 import sqlite3
 
 # File paths
@@ -110,7 +109,6 @@ class HotkeySignal(QObject):
     # This signal will be emitted when a hotkey is pressed
     hotkey_pressed = pyqtSignal(object)  # The signal carries a callable object
 
-
 # Player box widget
 class PlayerBox(QGroupBox):
     def __init__(self, button_id,hotkey_signal):
@@ -208,7 +206,6 @@ def create_leaderboard():
 def getToday():
     return  datetime.now().strftime('%Y-%m-%d')
 
-
 class ScoreRepository:
     def __init__(self):
         self.db_path = 'highscores.db'
@@ -288,7 +285,6 @@ class ScoreRepository:
         finally:
             cursor.close()
             conn.close()
-
 
 def bootstrap():
     global global_repo
