@@ -2,13 +2,7 @@ from PyQt5.QtCore import QObject, pyqtSignal,QTimer,QTimer,pyqtSignal, QObject,Q
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QGroupBox, QGridLayout,QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QScrollArea, QGridLayout, QGroupBox,QHBoxLayout
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView
 from datetime import datetime
-import json
-import os
-import schedule
-import shutil
 import sys
-import threading
-import time
 import keyboard
 import locale
 from PyQt5.QtGui import QPalette, QBrush, QPixmap
@@ -17,51 +11,8 @@ import sqlite3
 # File paths
 COUNT_FILE = 'counters.json'
 BG_IMAGE_FILE = 'bg.png'
-BACKUP_FOLDER = 'backup'
-
-# Last modified times
-counter_last_modified = 0
-bg_last_modified = 0
 
 BUTTON_TIMEOUT_SECONDS = 3
-
-TEST_MODE = True
-
-def backup_file(file_path, backup_folder):
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    filename, file_extension = os.path.splitext(os.path.basename(file_path))
-    backup_filename = f"{filename}_{timestamp}{file_extension}"
-    backup_path = os.path.join(backup_folder, backup_filename)
-    shutil.copy2(file_path, backup_path)
-    print(f"File {file_path} backed up to {backup_path}")
-
-def job():
-    global counter_last_modified, bg_last_modified
-
-    # Create backup folder if it doesn't exist
-    if not os.path.exists(BACKUP_FOLDER):
-        os.makedirs(BACKUP_FOLDER)
-
-    # Check if the counter file has been modified
-    if os.path.getmtime(COUNT_FILE) > counter_last_modified:
-        backup_file(COUNT_FILE, BACKUP_FOLDER)
-        counter_last_modified = os.path.getmtime(COUNT_FILE)
-
-    # Check if the bg image file has been modified
-    if os.path.getmtime(BG_IMAGE_FILE) > bg_last_modified:
-        backup_file(BG_IMAGE_FILE, BACKUP_FOLDER)
-        bg_last_modified = os.path.getmtime(BG_IMAGE_FILE)
-
-# This function will contain the infinite loop to run scheduled jobs
-def start_backup_job():
-    if TEST_MODE:
-        schedule.every(10).seconds.do(job)
-    else:
-        schedule.every().day.at("00:00").do(job)
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
-
 
 # Signal class for updating UI
 class UpdateSignal(QObject):
@@ -341,12 +292,9 @@ class ScoreRepository:
 
 def bootstrap():
     global global_repo
-    locale.setlocale(locale.LC_ALL, 'nb_NO.UTF-8')  # Norwegian Bokmål locale
-
     global_repo = ScoreRepository()
 
-    backup_thread = threading.Thread(target=start_backup_job)
-    backup_thread.start()
+    locale.setlocale(locale.LC_ALL, 'nb_NO.UTF-8')  # Norwegian Bokmål locale
 
     app = QApplication(sys.argv)
     demo = AppDemo()
