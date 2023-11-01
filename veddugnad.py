@@ -152,6 +152,7 @@ class PlayerBox(QGroupBox):
 
         self.layout.addLayout(score_speed_container)
         self.setLayout(self.layout)
+
     def update_ui(self):
         today = getToday()
         player_data = global_repo.get_player_score_data(today, self.button_id)
@@ -285,6 +286,72 @@ class ScoreRepository:
         finally:
             cursor.close()
             conn.close()
+
+    def get_player_info(self, button_id):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+            SELECT 
+                p.id AS player_id,
+                p.name AS player_name,
+                (SELECT COUNT(*) FROM button_presses WHERE button_id = ? AND timestamp < CURRENT_DATE) = 0 AS is_new,
+                (SELECT COUNT(*) FROM button_presses WHERE button_id = ? AND date(timestamp) = CURRENT_DATE) AS today_press_count
+            FROM 
+                players p
+            JOIN 
+                player_button_date pbd ON p.id = pbd.player_id
+            WHERE 
+                pbd.button_id = ? AND pbd.date = CURRENT_DATE
+            """, (button_id, button_id, button_id))
+            result = cursor.fetchone()
+            return {
+                "player_id": result[0] if result else None,
+                "player_name": result[1] if result else None,
+                "is_new": bool(result[2]) if result else None,
+                "today_press_count": result[3] if result else 0
+            }
+        finally:
+            cursor.close()
+            conn.close()
+
+    def upsert_player_button_date(self, button_id, player_id, date):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+            INSERT INTO player_button_date (player_id, button_id, date)
+            VALUES (?, ?, ?)
+            ON CONFLICT(button_id, date) DO UPDATE SET player_id = excluded.player_id
+            """, (player_id, button_id, date))
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+    def create_player_and_upsert_player_button_date(self, player_name, button_id, date):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            # Step 1: Insert new player
+            cursor.execute("INSERT INTO players (name) VALUES (?)", (player_name,))
+            new_player_id = cursor.lastrowid
+
+            # Step 2: Upsert into player_button_date
+            cursor.execute("""
+                INSERT INTO player_button_date (player_id, button_id, date)
+                VALUES (?, ?, ?)
+                ON CONFLICT(button_id, date) DO UPDATE SET player_id = excluded.player_id
+            """, (new_player_id, button_id, date))
+
+            conn.commit()
+        except Exception as e:
+            # Handle exceptions if needed
+            print("Error:", e)
+        finally:
+            cursor.close()
+            conn.close()
+
 
 def bootstrap():
     global global_repo
