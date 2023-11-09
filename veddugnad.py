@@ -319,7 +319,7 @@ def create_leaderboard():
                 leaderboard.append(( date_norwegian_format, data['name'], data['score'], speed))
 
     # Sorting by score in descending order
-    leaderboard.sort(key=lambda x: x[3], reverse=True)
+    leaderboard.sort(key=lambda x: x[2], reverse=True)
     return leaderboard
 
 def getToday():
