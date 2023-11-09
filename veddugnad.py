@@ -1,5 +1,5 @@
-from PyQt5.QtCore import QObject, pyqtSignal,QTimer,QTimer,pyqtSignal, QObject,Qt
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QGroupBox, QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QScrollArea, QGroupBox,QHBoxLayout,QTableWidget, QTableWidgetItem, QHeaderView
+from PyQt5.QtCore import QObject, pyqtSignal, QTimer, QTimer, pyqtSignal, QObject, Qt
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QGroupBox, QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QScrollArea, QGroupBox, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView
 from PyQt5.QtGui import QPalette, QBrush, QPixmap
 from datetime import datetime
 import sys
@@ -14,19 +14,24 @@ BG_IMAGE_FILE = 'bg.png'
 BUTTON_TIMEOUT_SECONDS = 3
 
 # Signal class for updating UI
+
+
 class UpdateSignal(QObject):
     update_ui_signal = pyqtSignal()
+
 
 update_signal = UpdateSignal()
 
 # Main application window
+
+
 class AppDemo(QWidget):
     def __init__(self):
         super().__init__()
         self.hotkey_signal = HotkeySignal()
         self.initUI()
         update_signal.update_ui_signal.connect(self.update_ui)
-        
+
         self.hotkey_signal.hotkey_pressed.connect(self.execute_function)
 
     def initUI(self):
@@ -34,10 +39,10 @@ class AppDemo(QWidget):
 
         # Adding leaderboard
         self.leaderboard = LeaderboardWidget()
-        main_layout.addWidget(self.leaderboard,1)
+        main_layout.addWidget(self.leaderboard, 1)
 
         # Create an attribute to hold player boxes
-        self.player_boxes = [] 
+        self.player_boxes = []
 
         player_boxes_layout = QHBoxLayout()
         for i in range(0, 6, 2):  # Creating pairs
@@ -46,24 +51,28 @@ class AppDemo(QWidget):
             for j in range(2):  # Two player boxes per pair
                 player_box = PlayerBox(str(i + j + 1), self.hotkey_signal)
                 pair_layout.addWidget(player_box)
-                self.player_boxes.append(player_box)  # Add player box to the list
+                # Add player box to the list
+                self.player_boxes.append(player_box)
 
             player_boxes_layout.addLayout(pair_layout)
 
-        main_layout.addLayout(player_boxes_layout,2)
+        main_layout.addLayout(player_boxes_layout, 2)
         # Set background image
         palette = QPalette()
-        pixmap = QPixmap("bg.png").scaled(self.width(), self.height(), Qt.IgnoreAspectRatio)
+        pixmap = QPixmap("bg.png").scaled(
+            self.width(), self.height(), Qt.IgnoreAspectRatio)
         palette.setBrush(QPalette.Background, QBrush(pixmap))
         self.setPalette(palette)
 
         self.setLayout(main_layout)
 
         self.update_ui()
+
     def resizeEvent(self, event):
         # Update the background image to fit the new size of the window
         palette = QPalette()
-        pixmap = QPixmap("bg.png").scaled(self.width(), self.height(), Qt.IgnoreAspectRatio)
+        pixmap = QPixmap("bg.png").scaled(
+            self.width(), self.height(), Qt.IgnoreAspectRatio)
         palette.setBrush(QPalette.Background, QBrush(pixmap))
         self.setPalette(palette)
 
@@ -76,6 +85,8 @@ class AppDemo(QWidget):
         func()
 
 # Leaderboard widget
+
+
 class LeaderboardWidget(QScrollArea):
     def __init__(self):
         super().__init__()
@@ -86,7 +97,8 @@ class LeaderboardWidget(QScrollArea):
         self.table = QTableWidget()
         self.setWidget(self.table)
         self.table.setColumnCount(4)
-        self.table.setHorizontalHeaderLabels([ "Dato", "Navn", "Sekker", "Fart"])
+        self.table.setHorizontalHeaderLabels(
+            ["Dato", "Navn", "Sekker", "Fart"])
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
 
@@ -99,26 +111,31 @@ class LeaderboardWidget(QScrollArea):
         for entry in leaderboard:
             row_position = self.table.rowCount()
             self.table.insertRow(row_position)
-            
+
             self.table.setItem(row_position, 0, QTableWidgetItem(entry[0]))
             self.table.setItem(row_position, 1, QTableWidgetItem(entry[1]))
-            self.table.setItem(row_position, 2, QTableWidgetItem(str(entry[2])))
-            self.table.setItem(row_position, 3, QTableWidgetItem(f"{entry[3]:.2f} s"))
+            self.table.setItem(
+                row_position, 2, QTableWidgetItem(str(entry[2])))
+            self.table.setItem(
+                row_position, 3, QTableWidgetItem(f"{entry[3]:.2f} s"))
+
 
 class HotkeySignal(QObject):
     # This signal will be emitted when a hotkey is pressed
     hotkey_pressed = pyqtSignal(object)  # The signal carries a callable object
 
 # Player box widget
+
+
 class PlayerBox(QGroupBox):
-    def __init__(self, button_id,hotkey_signal):
+    def __init__(self, button_id, hotkey_signal):
         super().__init__()
         self.button_id = button_id
         self.hotkey_signal = hotkey_signal
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.timeout)
-        self.timer.setInterval(BUTTON_TIMEOUT_SECONDS * 1000)  
+        self.timer.setInterval(BUTTON_TIMEOUT_SECONDS * 1000)
 
         # add keyboard hotkeys for f1 through f6
         keyboard.add_hotkey(f'f{button_id}', self.on_hotkey_pressed)
@@ -143,12 +160,14 @@ class PlayerBox(QGroupBox):
 
         # Adding score label with increased font size
         self.score_label = QLabel()
-        self.score_label.setStyleSheet("font-size: 80px;")  
-        score_speed_container.addWidget(self.score_label, alignment=Qt.AlignCenter)
+        self.score_label.setStyleSheet("font-size: 80px;")
+        score_speed_container.addWidget(
+            self.score_label, alignment=Qt.AlignCenter)
 
         # Adding speed label below score label
         self.speed_label = QLabel()
-        score_speed_container.addWidget(self.speed_label, alignment=Qt.AlignCenter)
+        score_speed_container.addWidget(
+            self.speed_label, alignment=Qt.AlignCenter)
 
         self.layout.addLayout(score_speed_container)
         self.setLayout(self.layout)
@@ -161,7 +180,7 @@ class PlayerBox(QGroupBox):
             name, score, startedAt, stoppedAt, speed = player_data
             self.score_label.setText(str(score))
             self.name_input.setText(name if name else '')
-            
+
             if score > 1 and startedAt and stoppedAt:
                 self.speed_label.setText(f"{speed:.2f} sekunder per sekk")
             else:
@@ -185,7 +204,8 @@ class PlayerBox(QGroupBox):
         if not self.timer.isActive():
             today = getToday()
             global_repo.increment_score(self.button_id, today)
-            self.setStyleSheet("background-color: darkgrey;")  # Change to a darker color
+            # Change to a darker color
+            self.setStyleSheet("background-color: darkgrey;")
 
             self.timer.start()
             update_signal.update_ui_signal.emit()
@@ -204,8 +224,10 @@ def create_leaderboard():
         leaderboard.append((formatted_date, name, score, speed))
     return leaderboard
 
+
 def getToday():
-    return  datetime.now().strftime('%Y-%m-%d')
+    return datetime.now().strftime('%Y-%m-%d')
+
 
 class ScoreRepository:
     def __init__(self):
@@ -218,11 +240,13 @@ class ScoreRepository:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT player_id FROM player_button_date WHERE button_id=? AND date=?", (button_id, date))
+            cursor.execute(
+                "SELECT player_id FROM player_button_date WHERE button_id=? AND date=?", (button_id, date))
             player_id_record = cursor.fetchone()
             if player_id_record:
                 player_id = player_id_record[0]
-                cursor.execute("UPDATE players SET name=? WHERE id=?", (new_name, player_id))
+                cursor.execute(
+                    "UPDATE players SET name=? WHERE id=?", (new_name, player_id))
                 conn.commit()
         finally:
             cursor.close()
@@ -275,7 +299,7 @@ class ScoreRepository:
                 SELECT 1 FROM player_button_date 
                 WHERE button_id = ? AND date = ?
             """, (button_id, date))
-            
+
             if cursor.fetchone():
                 # Insert a new button press
                 cursor.execute("""
@@ -334,7 +358,8 @@ class ScoreRepository:
         cursor = conn.cursor()
         try:
             # Step 1: Insert new player
-            cursor.execute("INSERT INTO players (name) VALUES (?)", (player_name,))
+            cursor.execute(
+                "INSERT INTO players (name) VALUES (?)", (player_name,))
             new_player_id = cursor.lastrowid
 
             # Step 2: Upsert into player_button_date
@@ -363,5 +388,6 @@ def bootstrap():
     demo = AppDemo()
     demo.show()
     sys.exit(app.exec_())
+
 
 bootstrap()
