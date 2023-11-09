@@ -39,7 +39,7 @@ SELECT pl.name AS player_name,
         ELSE 0
     END as speed
 FROM score s
-    JOIN player pl ON s.player_id = pl.id
+    LEFT JOIN player pl ON s.player_id = pl.id
 GROUP BY pl.name,
     s.date,
     s.button_id;

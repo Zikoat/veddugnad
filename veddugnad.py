@@ -243,11 +243,22 @@ class ScoreRepository:
             cursor.execute(
                 "SELECT player_id FROM score WHERE button_id=? AND date=?", (button_id, date))
             player_id_record = cursor.fetchone()
+
             if player_id_record:
                 player_id = player_id_record[0]
                 cursor.execute(
                     "UPDATE player SET name=? WHERE id=?", (new_name, player_id))
-                conn.commit()
+            else:
+                cursor.execute(
+                    "INSERT INTO player (name) VALUES (?)", (new_name,))
+                new_player_id = cursor.lastrowid
+
+                cursor.execute("""
+                    INSERT INTO score (player_id, button_id, date)
+                    VALUES (?, ?, ?)
+                """, (new_player_id, button_id, date))
+
+            conn.commit()
         finally:
             cursor.close()
             conn.close()
@@ -263,7 +274,7 @@ class ScoreRepository:
                     ds.stoppedAt,
                     ds.speed
                 FROM daily_scores ds
-                JOIN player p ON ds.player_id = p.id
+                LEFT JOIN player p ON ds.player_id = p.id
                 WHERE ds.date = ? AND ds.button_id = ?
             """, (date, button_id))
             result = cursor.fetchone()
