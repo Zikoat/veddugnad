@@ -3,12 +3,13 @@
 ## installation
 1. download sqlite, extract it to a folder, and add that folder to PATH
 2. Open powershell as admin, and run the following commands:
+```shell
+python3 -m venv myenv
+.\myenv\scripts\activate
+pip install -r requirements.txt
+sqlite3 highscores.db < create_db.sql
+python3 veddugnad.py
 ```
-choco install make
-make install
-make createdb
-```
-This will probably fail, but installation is only done once, and by me, so it's ok.
 
 ## qs for gpt
 
