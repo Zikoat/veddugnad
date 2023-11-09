@@ -1,81 +1,23 @@
 from PyQt5.QtCore import QObject, pyqtSignal,QTimer,QTimer,pyqtSignal, QObject,Qt
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QGroupBox, QGridLayout,QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QScrollArea, QGridLayout, QGroupBox,QHBoxLayout
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView
-from datetime import datetime
-import json
-import os
-import schedule
-import shutil
-import sys
-import threading
-import time
-import keyboard
-
-import locale
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QGroupBox, QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QScrollArea, QGroupBox,QHBoxLayout,QTableWidget, QTableWidgetItem, QHeaderView
 from PyQt5.QtGui import QPalette, QBrush, QPixmap
-
-
-
+from datetime import datetime
+import sys
+import keyboard
+import locale
+import sqlite3
 
 # File paths
 COUNT_FILE = 'counters.json'
 BG_IMAGE_FILE = 'bg.png'
-BACKUP_FOLDER = 'backup'
-
-# Last modified times
-counter_last_modified = 0
-bg_last_modified = 0
 
 BUTTON_TIMEOUT_SECONDS = 3
-
-TEST_MODE = True
-
-def backup_file(file_path, backup_folder):
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    filename, file_extension = os.path.splitext(os.path.basename(file_path))
-    backup_filename = f"{filename}_{timestamp}{file_extension}"
-    backup_path = os.path.join(backup_folder, backup_filename)
-    shutil.copy2(file_path, backup_path)
-    print(f"File {file_path} backed up to {backup_path}")
-
-def job():
-    global counter_last_modified, bg_last_modified
-
-    # Create backup folder if it doesn't exist
-    if not os.path.exists(BACKUP_FOLDER):
-        os.makedirs(BACKUP_FOLDER)
-
-    # Check if the counter file has been modified
-    if os.path.getmtime(COUNT_FILE) > counter_last_modified:
-        backup_file(COUNT_FILE, BACKUP_FOLDER)
-        counter_last_modified = os.path.getmtime(COUNT_FILE)
-
-    # Check if the bg image file has been modified
-    if os.path.getmtime(BG_IMAGE_FILE) > bg_last_modified:
-        backup_file(BG_IMAGE_FILE, BACKUP_FOLDER)
-        bg_last_modified = os.path.getmtime(BG_IMAGE_FILE)
-
-# This function will contain the infinite loop to run scheduled jobs
-def start_backup_job():
-    if TEST_MODE:
-        schedule.every(10).seconds.do(job)
-    else:
-        schedule.every().day.at("00:00").do(job)
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
-
 
 # Signal class for updating UI
 class UpdateSignal(QObject):
     update_ui_signal = pyqtSignal()
 
 update_signal = UpdateSignal()
-
-# Function to save scores to file
-def save_scores():
-    with open(COUNT_FILE, 'w') as f:
-        json.dump(scores, f, indent=4)
 
 # Main application window
 class AppDemo(QWidget):
@@ -129,12 +71,9 @@ class AppDemo(QWidget):
         for player_box in self.player_boxes:
             player_box.update_ui()
         self.leaderboard.update_ui()
-        save_scores()
 
     def execute_function(self, func):
         func()
-
-
 
 # Leaderboard widget
 class LeaderboardWidget(QScrollArea):
@@ -169,7 +108,6 @@ class LeaderboardWidget(QScrollArea):
 class HotkeySignal(QObject):
     # This signal will be emitted when a hotkey is pressed
     hotkey_pressed = pyqtSignal(object)  # The signal carries a callable object
-
 
 # Player box widget
 class PlayerBox(QGroupBox):
@@ -213,27 +151,26 @@ class PlayerBox(QGroupBox):
         score_speed_container.addWidget(self.speed_label, alignment=Qt.AlignCenter)
 
         self.layout.addLayout(score_speed_container)
-
-        # Creating a container for increment/decrement buttons, centered horizontally
-        inc_dec_container = QHBoxLayout()
-
-        # Adding decrement button
-        self.decrement_button = QPushButton('-')
-        self.decrement_button.clicked.connect(self.decrement_score)
-        self.decrement_button.setMaximumWidth(30)  # Set the maximum width to 30 pixels
-        inc_dec_container.addWidget(self.decrement_button)
-
-        # Adding increment button
-        self.increment_button = QPushButton('+')
-        self.increment_button.clicked.connect(self.increment_score)
-        self.increment_button.setMaximumWidth(30)  # Set the maximum width to 30 pixels
-        inc_dec_container.addWidget(self.increment_button)
-
-        inc_dec_container.setAlignment(Qt.AlignCenter)  # Set alignment property here
-
-        self.layout.addLayout(inc_dec_container)
-
         self.setLayout(self.layout)
+
+    def update_ui(self):
+        today = getToday()
+        player_data = global_repo.get_player_score_data(today, self.button_id)
+
+        if player_data:
+            name, score, startedAt, stoppedAt, speed = player_data
+            self.score_label.setText(str(score))
+            self.name_input.setText(name if name else '')
+            
+            if score > 1 and startedAt and stoppedAt:
+                self.speed_label.setText(f"{speed:.2f} sekunder per sekk")
+            else:
+                self.speed_label.setText("")
+        else:
+            # Handle the case where no data is returned
+            self.score_label.setText("0")
+            self.name_input.setText("")
+            self.speed_label.setText("")
 
     def on_hotkey_pressed(self):
         # Emit the signal with a lambda function as an argument that calls your update method
@@ -241,27 +178,14 @@ class PlayerBox(QGroupBox):
 
     def update_name(self):
         today = getToday()
-        scores[today][self.button_id]["name"] = self.name_input.text()
+        global_repo.update_name(self.button_id, self.name_input.text(), today)
         update_signal.update_ui_signal.emit()
 
     def press_button(self):
         if not self.timer.isActive():
             today = getToday()
-            scores[today][self.button_id]["score"] += 1
+            global_repo.increment_score(self.button_id, today)
             self.setStyleSheet("background-color: darkgrey;")  # Change to a darker color
-
-            # Disable the increment and decrement buttons during the timeout period
-            self.increment_button.setDisabled(True)  
-            self.decrement_button.setDisabled(True)  
-
-            current_timestamp = datetime.now().isoformat()  # Get the current timestamp in ISO format
-            
-            # Update startedAt if it is null
-            if scores[today][self.button_id]["startedAt"] is None:
-                scores[today][self.button_id]["startedAt"] = current_timestamp
-                
-            # Always update stoppedAt when the button is pressed
-            scores[today][self.button_id]["stoppedAt"] = current_timestamp
 
             self.timer.start()
             update_signal.update_ui_signal.emit()
@@ -269,89 +193,172 @@ class PlayerBox(QGroupBox):
     def timeout(self):
         self.timer.stop()
         self.setStyleSheet("")  # Reset to the original style
-        self.increment_button.setDisabled(False)  
-        self.decrement_button.setDisabled(False)  
         self.update_ui()
 
-    def increment_score(self):
-        today = getToday()
-        scores[today][self.button_id]["score"] += 1
-        update_signal.update_ui_signal.emit()
 
-
-    def decrement_score(self):
-        today = getToday()
-        if scores[today][self.button_id]["score"] > 0:
-            scores[today][self.button_id]["score"] -= 1
-        update_signal.update_ui_signal.emit()
-
-    def update_ui(self):
-        today = getToday()
-        player_data = scores[today][self.button_id]
-        self.score_label.setText(f"{player_data['score']}")
-        self.name_input.setText(player_data['name'] if player_data['name'] else '')
-        if player_data['score'] > 1 and player_data['startedAt'] and player_data['stoppedAt']:
-            start_time = datetime.fromisoformat(player_data['startedAt'])
-            end_time = datetime.fromisoformat(player_data['stoppedAt'])
-            duration = (end_time - start_time).total_seconds()
-            speed = duration / (player_data['score'] - 1)
-            self.speed_label.setText(f"{speed:.2f} sekunder per sekk")
-        else:
-            self.speed_label.setText("")
-
-# Function to create leaderboard
 def create_leaderboard():
+    leaderboard_data = global_repo.get_leaderboard()
     leaderboard = []
-    for date, buttons in scores.items():
-        for button_id, data in buttons.items():
-            if data['startedAt'] and data['stoppedAt'] and data['score'] > 0:
-                start_time = datetime.fromisoformat(data['startedAt'])
-                end_time = datetime.fromisoformat(data['stoppedAt'])
-                duration = (end_time - start_time).total_seconds()
-
-                # Adjusting for the first item
-                if data['score'] > 1:
-                    speed = duration / (data['score'] - 1)
-                else:
-                    speed = duration
-                
-                date_norwegian_format = datetime.strptime(date, "%Y-%m-%d").strftime("%a %d.%m")
-                leaderboard.append(( date_norwegian_format, data['name'], data['score'], speed))
-
-    # Sorting by score in descending order
-    leaderboard.sort(key=lambda x: x[2], reverse=True)
+    for entry in leaderboard_data:
+        formatted_date, name, score, speed = entry
+        leaderboard.append((formatted_date, name, score, speed))
     return leaderboard
 
 def getToday():
     return  datetime.now().strftime('%Y-%m-%d')
 
+class ScoreRepository:
+    def __init__(self):
+        self.db_path = 'highscores.db'
+
+    def _get_connection(self):
+        return sqlite3.connect(self.db_path)
+
+    def update_name(self, button_id, new_name, date):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT player_id FROM player_button_date WHERE button_id=? AND date=?", (button_id, date))
+            player_id_record = cursor.fetchone()
+            if player_id_record:
+                player_id = player_id_record[0]
+                cursor.execute("UPDATE players SET name=? WHERE id=?", (new_name, player_id))
+                conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+    def get_player_score_data(self, date, button_id):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT p.name,
+                    ds.score,
+                    ds.startedAt,
+                    ds.stoppedAt,
+                    ds.speed
+                FROM daily_scores ds
+                JOIN players p ON ds.player_name = p.name
+                WHERE ds.date = ? AND ds.button_id = ?
+            """, (date, button_id))
+            result = cursor.fetchone()
+            return result
+        finally:
+            cursor.close()
+            conn.close()
+
+    def get_leaderboard(self):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT strftime('%w %d.%m', ds.date) as formatted_date,
+                       p.name,
+                       ds.score,
+                       ds.speed
+                FROM daily_scores ds
+                JOIN players p ON ds.player_name = p.name
+                ORDER BY ds.score DESC, speed ASC;
+            """)
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+            conn.close()
+
+    def increment_score(self, button_id, date):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            # Check if there's a player_button_date entry for today and the given button
+            cursor.execute("""
+                SELECT 1 FROM player_button_date 
+                WHERE button_id = ? AND date = ?
+            """, (button_id, date))
+            
+            if cursor.fetchone():
+                # Insert a new button press
+                cursor.execute("""
+                    INSERT INTO button_presses (button_id, timestamp)
+                    VALUES (?, CURRENT_TIMESTAMP)
+                """, (button_id,))
+                conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+    def get_player_info(self, button_id):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+            SELECT 
+                p.id AS player_id,
+                p.name AS player_name,
+                (SELECT COUNT(*) FROM button_presses WHERE button_id = ? AND timestamp < CURRENT_DATE) = 0 AS is_new,
+                (SELECT COUNT(*) FROM button_presses WHERE button_id = ? AND date(timestamp) = CURRENT_DATE) AS today_press_count
+            FROM 
+                players p
+            JOIN 
+                player_button_date pbd ON p.id = pbd.player_id
+            WHERE 
+                pbd.button_id = ? AND pbd.date = CURRENT_DATE
+            """, (button_id, button_id, button_id))
+            result = cursor.fetchone()
+            return {
+                "player_id": result[0] if result else None,
+                "player_name": result[1] if result else None,
+                "is_new": bool(result[2]) if result else None,
+                "today_press_count": result[3] if result else 0
+            }
+        finally:
+            cursor.close()
+            conn.close()
+
+    def upsert_player_button_date(self, button_id, player_id, date):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+            INSERT INTO player_button_date (player_id, button_id, date)
+            VALUES (?, ?, ?)
+            ON CONFLICT(button_id, date) DO UPDATE SET player_id = excluded.player_id
+            """, (player_id, button_id, date))
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+    def create_player_and_upsert_player_button_date(self, player_name, button_id, date):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            # Step 1: Insert new player
+            cursor.execute("INSERT INTO players (name) VALUES (?)", (player_name,))
+            new_player_id = cursor.lastrowid
+
+            # Step 2: Upsert into player_button_date
+            cursor.execute("""
+                INSERT INTO player_button_date (player_id, button_id, date)
+                VALUES (?, ?, ?)
+                ON CONFLICT(button_id, date) DO UPDATE SET player_id = excluded.player_id
+            """, (new_player_id, button_id, date))
+
+            conn.commit()
+        except Exception as e:
+            # Handle exceptions if needed
+            print("Error:", e)
+        finally:
+            cursor.close()
+            conn.close()
+
 
 def bootstrap():
-    global scores
-    locale.setlocale(locale.LC_ALL, 'nb_NO.UTF-8')  # 'nb_NO' is the locale for Norwegian Bokmål
+    global global_repo
+    global_repo = ScoreRepository()
 
-    # Load scores from file if exists or initialize with today's date and null/0 values
-    today = getToday()
+    locale.setlocale(locale.LC_ALL, 'nb_NO.UTF-8')  # Norwegian Bokmål locale
 
-    if os.path.exists(COUNT_FILE):
-        with open(COUNT_FILE, 'r') as f:
-            scores = json.load(f)
-            if today not in scores:
-                scores[today] = {
-                    str(i): {"name": None, "score": 0, "startedAt": None, "stoppedAt": None} for i in range(1, 7)
-                }
-    else:
-        scores = {
-            today: {
-                str(i): {"name": None, "score": 0, "startedAt": None, "stoppedAt": None} for i in range(1, 7)
-            }
-        }
-
-    # Start the backup job in a separate thread
-    backup_thread = threading.Thread(target=start_backup_job)
-    backup_thread.start()
-
-    # Start the GUI in the main thread
     app = QApplication(sys.argv)
     demo = AppDemo()
     demo.show()
