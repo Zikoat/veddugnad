@@ -241,12 +241,12 @@ class ScoreRepository:
         cursor = conn.cursor()
         try:
             cursor.execute(
-                "SELECT player_id FROM player_button_date WHERE button_id=? AND date=?", (button_id, date))
+                "SELECT player_id FROM score WHERE button_id=? AND date=?", (button_id, date))
             player_id_record = cursor.fetchone()
             if player_id_record:
                 player_id = player_id_record[0]
                 cursor.execute(
-                    "UPDATE players SET name=? WHERE id=?", (new_name, player_id))
+                    "UPDATE player SET name=? WHERE id=?", (new_name, player_id))
                 conn.commit()
         finally:
             cursor.close()
@@ -263,7 +263,7 @@ class ScoreRepository:
                     ds.stoppedAt,
                     ds.speed
                 FROM daily_scores ds
-                JOIN players p ON ds.player_name = p.name
+                JOIN player p ON ds.player_id = p.id
                 WHERE ds.date = ? AND ds.button_id = ?
             """, (date, button_id))
             result = cursor.fetchone()
@@ -278,12 +278,12 @@ class ScoreRepository:
         try:
             cursor.execute("""
                 SELECT strftime('%w %d.%m', ds.date) as formatted_date,
-                       p.name,
-                       ds.score,
-                       ds.speed
+                    p.name,
+                    ds.score,
+                    ds.speed
                 FROM daily_scores ds
-                JOIN players p ON ds.player_name = p.name
-                ORDER BY ds.score DESC, speed ASC;
+                JOIN player p ON ds.player_id = p.id
+                ORDER BY ds.score DESC, ds.speed ASC;
             """)
             return cursor.fetchall()
         finally:
@@ -294,19 +294,28 @@ class ScoreRepository:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            # Check if there's a player_button_date entry for today and the given button
+            # Check if there's a score entry for today and the given button
             cursor.execute("""
-                SELECT 1 FROM player_button_date 
+                SELECT presses FROM score 
                 WHERE button_id = ? AND date = ?
             """, (button_id, date))
 
-            if cursor.fetchone():
-                # Insert a new button press
+            result = cursor.fetchone()
+            if result:
+                # Score exists, increment it
+                new_score = result[0] + 1
                 cursor.execute("""
-                    INSERT INTO button_presses (button_id, timestamp)
-                    VALUES (?, CURRENT_TIMESTAMP)
-                """, (button_id,))
-                conn.commit()
+                    UPDATE score SET presses = ?
+                    WHERE button_id = ? AND date = ?
+                """, (new_score, button_id, date))
+            else:
+                # No score for today, insert a new record with score of 1
+                cursor.execute("""
+                    INSERT INTO score (button_id, date, presses)
+                    VALUES (?, ?, 1)
+                """, (button_id, date))
+
+            conn.commit()
         finally:
             cursor.close()
             conn.close()
@@ -319,54 +328,58 @@ class ScoreRepository:
             SELECT 
                 p.id AS player_id,
                 p.name AS player_name,
-                (SELECT COUNT(*) FROM button_presses WHERE button_id = ? AND timestamp < CURRENT_DATE) = 0 AS is_new,
-                (SELECT COUNT(*) FROM button_presses WHERE button_id = ? AND date(timestamp) = CURRENT_DATE) AS today_press_count
+                (SELECT COUNT(*) FROM score WHERE player_id = p.id) = 0 AS is_new,
+                COALESCE((SELECT SUM(presses) FROM score WHERE button_id = ? AND date = CURRENT_DATE), 0) AS today_presses
             FROM 
-                players p
+                player p
             JOIN 
-                player_button_date pbd ON p.id = pbd.player_id
+                score s ON p.id = s.player_id
             WHERE 
-                pbd.button_id = ? AND pbd.date = CURRENT_DATE
-            """, (button_id, button_id, button_id))
+                s.button_id = ? AND s.date = CURRENT_DATE
+            """, (button_id, button_id))
             result = cursor.fetchone()
             return {
                 "player_id": result[0] if result else None,
                 "player_name": result[1] if result else None,
                 "is_new": bool(result[2]) if result else None,
-                "today_press_count": result[3] if result else 0
+                "today_presses": result[3] if result else 0
             }
         finally:
             cursor.close()
             conn.close()
 
-    def upsert_player_button_date(self, button_id, player_id, date):
+    def upsert_score(self, button_id, player_id, date):
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
             cursor.execute("""
-            INSERT INTO player_button_date (player_id, button_id, date)
-            VALUES (?, ?, ?)
-            ON CONFLICT(button_id, date) DO UPDATE SET player_id = excluded.player_id
+            INSERT INTO score (player_id, button_id, date, presses, startedAt, stoppedAt)
+            VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT(button_id, date) DO UPDATE SET 
+                player_id = excluded.player_id,
+                startedAt = CURRENT_TIMESTAMP
             """, (player_id, button_id, date))
             conn.commit()
         finally:
             cursor.close()
             conn.close()
 
-    def create_player_and_upsert_player_button_date(self, player_name, button_id, date):
+    def create_player_and_upsert_score(self, player_name, button_id, date):
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
             # Step 1: Insert new player
             cursor.execute(
-                "INSERT INTO players (name) VALUES (?)", (player_name,))
+                "INSERT INTO player (name) VALUES (?)", (player_name,))
             new_player_id = cursor.lastrowid
 
-            # Step 2: Upsert into player_button_date
+            # Step 2: Upsert into score
             cursor.execute("""
-                INSERT INTO player_button_date (player_id, button_id, date)
-                VALUES (?, ?, ?)
-                ON CONFLICT(button_id, date) DO UPDATE SET player_id = excluded.player_id
+                INSERT INTO score (player_id, button_id, date, presses, startedAt, stoppedAt)
+                VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT(button_id, date) DO UPDATE SET 
+                    player_id = excluded.player_id,
+                    startedAt = CURRENT_TIMESTAMP
             """, (new_player_id, button_id, date))
 
             conn.commit()

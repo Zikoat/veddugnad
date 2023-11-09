@@ -31,6 +31,7 @@ SELECT pl.name AS player_name,
     s.stoppedAt,
     s.date,
     s.button_id,
+    s.player_id,
     CASE
         WHEN s.presses > 1 THEN (
             julianday(s.stoppedAt) - julianday(s.startedAt)
