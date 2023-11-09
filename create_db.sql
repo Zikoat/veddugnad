@@ -1,41 +1,44 @@
-CREATE TABLE IF NOT EXISTS players (
+CREATE TABLE IF NOT EXISTS player (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS buttons (
+CREATE TABLE IF NOT EXISTS button (
     button_id INTEGER PRIMARY KEY,
     hex_color TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS button_presses (
-    id INTEGER PRIMARY KEY,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    button_id INTEGER,
-    FOREIGN KEY (button_id) REFERENCES buttons(button_id)
-);
-CREATE TABLE IF NOT EXISTS player_button_date (
+INSERT
+    OR IGNORE INTO button (button_id, hex_color)
+VALUES (1, '#FF0000'),
+    (2, '#00FF00'),
+    (3, '#0000FF'),
+    (4, '#FFFF00'),
+    (5, '#FF00FF'),
+    (6, '#00FFFF');
+CREATE TABLE IF NOT EXISTS score (
     player_id INTEGER,
     button_id INTEGER,
     date DATE,
-    FOREIGN KEY (player_id) REFERENCES players(id),
-    FOREIGN KEY (button_id) REFERENCES buttons(button_id)
+    presses INTEGER DEFAULT 0,
+    startedAt DATETIME,
+    stoppedAt DATETIME,
+    FOREIGN KEY (player_id) REFERENCES player(id),
+    FOREIGN KEY (button_id) REFERENCES button(button_id)
 );
 CREATE VIEW IF NOT EXISTS daily_scores AS
-SELECT p.name AS player_name,
-    COUNT(bp.id) AS score,
-    MIN(bp.timestamp) AS startedAt,
-    MAX(bp.timestamp) AS stoppedAt,
-    pbd.date,
-    pbd.button_id,
+SELECT pl.name AS player_name,
+    s.presses AS score,
+    s.startedAt,
+    s.stoppedAt,
+    s.date,
+    s.button_id,
     CASE
-        WHEN COUNT(bp.id) > 1 THEN (
-            julianday(MAX(bp.timestamp)) - julianday(MIN(bp.timestamp))
-        ) * 86400 / (COUNT(bp.id) - 1)
+        WHEN s.presses > 1 THEN (
+            julianday(s.stoppedAt) - julianday(s.startedAt)
+        ) * 86400 / (s.presses - 1)
         ELSE 0
     END as speed
-FROM button_presses bp
-    JOIN player_button_date pbd ON bp.button_id = pbd.button_id
-    JOIN players p ON pbd.player_id = p.id
-WHERE bp.timestamp BETWEEN pbd.date AND pbd.date || ' 23:59:59'
-GROUP BY p.name,
-    pbd.date,
-    pbd.button_id;
+FROM score s
+    JOIN player pl ON s.player_id = pl.id
+GROUP BY pl.name,
+    s.date,
+    s.button_id;

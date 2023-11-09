@@ -7,7 +7,7 @@
 python3 -m venv myenv
 .\myenv\scripts\activate
 pip install -r requirements.txt
-sqlite3 highscores.db < create_db.sql
+Get-Content create_db.sql | sqlite3 highscores.db
 python3 veddugnad.py
 ```
 
