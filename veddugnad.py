@@ -15,6 +15,8 @@ import keyboard
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QPushButton
 
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QMessageBox
 
 # File paths
 COUNT_FILE = 'counters.json'
@@ -346,7 +348,7 @@ class EditPlayerDialog(QDialog):
         self.vedApp = vedApp
 
         self.initUI()
-        self.loadPlayerData()
+        self.updateUI()
 
     def initUI(self):
         self.layout = QVBoxLayout(self)
@@ -355,16 +357,36 @@ class EditPlayerDialog(QDialog):
         self.name_edit.textChanged.connect(self.onNameChanged)
         self.layout.addWidget(self.name_edit)
 
+        self.delete_button = QPushButton()
+        self.delete_button.setIcon(QIcon("delete_icon.svg"))  # Set path to your delete icon
+        self.delete_button.clicked.connect(self.onDeleteClicked)
+        self.layout.addWidget(self.delete_button)
+
         self.ok_button = QPushButton("OK")
         self.ok_button.clicked.connect(self.onOkClicked)
         self.layout.addWidget(self.ok_button)
 
-    def loadPlayerData(self):
+    def updateUI(self):
         # Load the player's current name from the database using global_repo
         current_name = global_repo.get_player_name_by_id(self.player_id)
         self.name_edit.textChanged.disconnect(self.onNameChanged)
         self.name_edit.setText(current_name)
         self.name_edit.textChanged.connect(self.onNameChanged)
+    
+        if global_repo.can_player_be_deleted(self.player_id):
+            self.delete_button.show()
+        else:
+            self.delete_button.hide()
+
+    def onDeleteClicked(self):
+        # Confirm deletion
+        reply = QMessageBox.question(self, 'Confirm Delete', 'Are you sure you want to delete this player?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            global_repo.delete_player(self.player_id)
+            self.accept()  # Close the dialog
+            vedApp.update_ui()  # Update the main application UI
 
     def onNameChanged(self, new_name):
         # Update the player's name in the database on each key press
@@ -659,6 +681,29 @@ class ScoreRepository:
             cursor.execute("SELECT name FROM player WHERE id = ?", (player_id,))
             result = cursor.fetchone()
             return result[0] if result else None
+        finally:
+            cursor.close()
+            conn.close()
+
+    def can_player_be_deleted(self, player_id):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            # Check if the player has any scores greater than 0
+            cursor.execute("SELECT EXISTS(SELECT 1 FROM score WHERE player_id = ? AND presses > 0)", (player_id,))
+            result = cursor.fetchone()
+            can_delete = result[0] == 0  # True if no scores > 0, False otherwise
+            return can_delete
+        finally:
+            cursor.close()
+            conn.close()
+
+    def delete_player(self, player_id):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("DELETE FROM player WHERE id = ?", (player_id,))
+            conn.commit()
         finally:
             cursor.close()
             conn.close()
