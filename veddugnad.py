@@ -260,6 +260,8 @@ class PlayerBox(QGroupBox):
             self.speed_label.setText("")
             self.player_select_combo.setCurrentIndex(-1)  # Reset selection
             self.player_select_combo.show()
+            self.add_player_button.show()
+
             
         self.player_select_combo.currentIndexChanged.connect(self.on_player_changed)
 
@@ -380,13 +382,9 @@ class EditPlayerDialog(QDialog):
 
     def onDeleteClicked(self):
         # Confirm deletion
-        reply = QMessageBox.question(self, 'Confirm Delete', 'Are you sure you want to delete this player?',
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-
-        if reply == QMessageBox.Yes:
-            global_repo.delete_player(self.player_id)
-            self.accept()  # Close the dialog
-            vedApp.update_ui()  # Update the main application UI
+        global_repo.delete_player(self.player_id)
+        self.accept()  # Close the dialog
+        vedApp.update_ui()  # Update the main application UI
 
     def onNameChanged(self, new_name):
         # Update the player's name in the database on each key press

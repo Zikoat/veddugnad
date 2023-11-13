@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS score (
     presses INTEGER DEFAULT 0 NOT NULL,
     startedAt DATETIME,
     stoppedAt DATETIME,
-    FOREIGN KEY (player_id) REFERENCES player(id),
+    FOREIGN KEY (player_id) REFERENCES player(id) ON DELETE CASCADE,
     FOREIGN KEY (button_id) REFERENCES button(button_id),
     UNIQUE (button_id, date),
     UNIQUE (player_id, date)
