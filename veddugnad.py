@@ -452,7 +452,10 @@ class ScoreRepository:
         self.db_path = 'highscores.db'
 
     def _get_connection(self):
-        return sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path)
+        conn.execute('PRAGMA foreign_keys = ON;')  # Enable foreign key constraints
+        return conn
+
 
     def update_name(self, player_id, new_name):
         conn = self._get_connection()
