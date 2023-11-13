@@ -230,15 +230,15 @@ class PlayerBox(QGroupBox):
                 if is_new_player:
                     # New player, no score today
                     self.info_label.setText(
-                        f"{score_entry['player_name']} is new. Press button to start.")
+                        f"Press button to start.")
                     self.add_player_button.hide()
-                    self.player_select_combo.setEnabled(False)
+                    self.player_select_combo.setEnabled(True)
                 else:
                     # Existing player, no score today
                     self.info_label.setText(
-                        f"{score_entry['player_name']} - press button to start.")
+                        f"Press button to start.")
                     self.add_player_button.show()
-                    self.player_select_combo.setEnabled(False)
+                    self.player_select_combo.setEnabled(True)
 
             else:
                 # Player with score today
