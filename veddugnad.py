@@ -556,7 +556,8 @@ def bootstrap():
     locale.setlocale(locale.LC_ALL, 'nb_NO.UTF-8')  # Norwegian Bokmål locale
 
     app = QApplication(sys.argv)
-    global demo = AppDemo()
+    global demo
+    demo = AppDemo()
     demo.show()
     sys.exit(app.exec_())
 
