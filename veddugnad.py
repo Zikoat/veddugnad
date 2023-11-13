@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer, QTimer, pyqtSignal, QObject, Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QGroupBox, QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QScrollArea, QGroupBox, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView,QStyle
 from PyQt5.QtGui import QPalette, QBrush, QPixmap,QIcon
@@ -13,6 +14,7 @@ from PyQt5.QtCore import QTimer
 import keyboard
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QPushButton
 
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton
 
 # File paths
 COUNT_FILE = 'counters.json'
@@ -25,11 +27,13 @@ class UpdateSignal(QObject):
 
 
 update_signal = UpdateSignal()
+debug_mode = True  # Set to False to hide mock controls
 
 
 class VedApp(QWidget):
     def __init__(self):
         super().__init__()
+        self.load_mock_hours()
         self.hotkey_signal = HotkeySignal()
         self.initUI()
         update_signal.update_ui_signal.connect(self.update_ui)
@@ -68,6 +72,10 @@ class VedApp(QWidget):
 
         self.setLayout(main_layout)
 
+        if debug_mode:
+            self.mock_date_controls = MockDateControls()
+            main_layout.addWidget(self.mock_date_controls)
+
         self.update_ui()
 
     def resizeEvent(self, event):
@@ -85,6 +93,15 @@ class VedApp(QWidget):
 
     def execute_function(self, func):
         func()
+
+    def load_mock_hours(self):
+        global mock_hours_increment
+        try:
+            with open('mock_hours.txt', 'r') as file:
+                mock_hours_increment = int(file.read())
+        except (FileNotFoundError, ValueError):
+            mock_hours_increment = 0
+
 
 # Leaderboard widget
 
@@ -164,9 +181,6 @@ class PlayerBox(QGroupBox):
 
         self.edit_player_button.clicked.connect(self.on_edit_player_clicked)
         topbar.addWidget(self.edit_player_button)
-
-
-
 
         topbar.setStretch(0, 1)  # Give more space to the combo box
         topbar.setStretch(1, 0)  # Less space for the button
@@ -358,6 +372,37 @@ class EditPlayerDialog(QDialog):
         vedApp.update_ui()  # Update the main application UI
 
 
+class MockDateControls(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.layout = QHBoxLayout(self)
+
+        self.mock_time_label = QLabel()
+        self.layout.addWidget(self.mock_time_label)
+
+        self.increment_hour_button = QPushButton("Increment Hour")
+        self.increment_hour_button.clicked.connect(self.increment_mock_hour)
+        self.layout.addWidget(self.increment_hour_button)
+        self.update_ui()
+
+    def update_ui(self):
+        formatted_time = getNow().strftime("%Y-%m-%d %H:%M")
+        self.mock_time_label.setText("Mocked Time: " + formatted_time)
+
+    def increment_mock_hour(self):
+        global mock_hours_increment
+        mock_hours_increment += 1
+        self.save_mock_hours()
+        self.update_ui()
+
+    def save_mock_hours(self):
+        global mock_hours_increment
+        with open('mock_hours.txt', 'w') as file:
+            file.write(str(mock_hours_increment))
+
 
 def create_leaderboard():
     leaderboard_data = global_repo.get_leaderboard()
@@ -368,9 +413,14 @@ def create_leaderboard():
     return leaderboard
 
 
-def getToday():
-    return datetime.now().strftime('%Y-%m-%d')
+def getNow():
+    """Returns the current date and time with hours incremented by mock_hours_increment."""
+    global mock_hours_increment
+    return datetime.now() + timedelta(hours=mock_hours_increment)
 
+def getToday():
+    """Returns the current date."""
+    return getNow().strftime('%Y-%m-%d')
 
 class ScoreRepository:
     def __init__(self):
