@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS player (
     id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL
+    name TEXT NOT NULL UNIQUE
 );
 CREATE TABLE IF NOT EXISTS button (
     button_id INTEGER PRIMARY KEY,
@@ -15,15 +15,17 @@ VALUES (1, '#FF0000'),
     (5, '#FF00FF'),
     (6, '#00FFFF');
 CREATE TABLE IF NOT EXISTS score (
-    player_id INTEGER,
-    button_id INTEGER,
-    date DATE,
-    presses INTEGER DEFAULT 0,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_id INTEGER NOT NULL,
+    button_id INTEGER NOT NULL,
+    date DATE NOT NULL,
+    presses INTEGER DEFAULT 0 NOT NULL,
     startedAt DATETIME,
     stoppedAt DATETIME,
-    PRIMARY KEY (button_id, date),
     FOREIGN KEY (player_id) REFERENCES player(id),
-    FOREIGN KEY (button_id) REFERENCES button(button_id)
+    FOREIGN KEY (button_id) REFERENCES button(button_id),
+    UNIQUE (button_id, date),
+    UNIQUE (player_id, date)
 );
 CREATE VIEW IF NOT EXISTS daily_scores AS
 SELECT pl.name AS player_name,

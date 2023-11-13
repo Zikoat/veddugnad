@@ -149,13 +149,11 @@ class PlayerBox(QGroupBox):
 
     def initUI(self):
         self.layout = QVBoxLayout()
-
-        # Player selection
         self.player_select_combo = QComboBox()
         self.player_select_combo.setEditable(True)
         self.player_select_combo.setInsertPolicy(QComboBox.NoInsert)
         self.player_select_combo.completer().setCompletionMode(QCompleter.PopupCompletion)
-
+        self.player_select_combo.currentIndexChanged.connect(self.on_player_changed)
         self.layout.addWidget(self.player_select_combo)
 
         # Information display area
@@ -179,23 +177,35 @@ class PlayerBox(QGroupBox):
         self.setLayout(self.layout)
 
     def update_ui(self):
-        player_names = global_repo.get_all_player_names()
+        players = global_repo.get_all_players()
+        
+        self.player_select_combo.currentIndexChanged.disconnect(self.on_player_changed)
         self.player_select_combo.clear()
-        self.player_select_combo.addItems(player_names)
+
+        for player_id, player_name in players:
+            self.player_select_combo.addItem(player_name, player_id)
 
         today = getToday()
         score_entry = global_repo.get_score_entry(self.button_id, today)
 
         if score_entry:
             player_id = score_entry['player_id']
-            self.player_select_combo.setCurrentIndex(
-                player_names.index(score_entry['player_name']))
+            player_index = self.find_combobox_player_index_by_id(player_id)
+            self.player_select_combo.setCurrentIndex(player_index)
             self.handle_player_states(score_entry)
         else:
             self.info_label.setText("Select player")
             self.score_label.setText("")
             self.speed_label.setText("")
             self.player_select_combo.setCurrentIndex(-1)  # Reset selection
+            
+        self.player_select_combo.currentIndexChanged.connect(self.on_player_changed)
+
+    def find_combobox_player_index_by_id(self, player_id):
+        for index in range(self.player_select_combo.count()):
+            if self.player_select_combo.itemData(index) == player_id:
+                return index
+        return -1  # Return -1 if player_id not found
 
     def handle_player_states(self, player_data):
         # Check if score is zero for today
@@ -206,16 +216,21 @@ class PlayerBox(QGroupBox):
                 # New player, no score today
                 self.info_label.setText(
                     f"{player_data['player_name']} is new. Press button to start.")
+                self.add_player_button.setEnabled(False)
             else:
                 # Existing player, no score today
                 self.info_label.setText(
                     f"{player_data['player_name']} - press button to start.")
+                self.add_player_button.setEnabled(True)
+
         else:
             # Player with score today
             self.info_label.setText(
                 f"Score: {player_data['score']}")
             self.speed_label.setText(
                 f"Speed: {player_data['speed']:.2f} sekunder per sekk")
+            self.add_player_button.setEnabled(False)
+
 
     def check_if_new_player(self, player_id):
         # Get the current date
@@ -229,24 +244,17 @@ class PlayerBox(QGroupBox):
         return not has_previous_scores
 
     def on_player_changed(self, index):
-        player_name = self.player_select_combo.currentText()
-        player_id = self.get_player_id_by_name(player_name)
-
-        print(player_name)
-        print(player_id)
+        selected_player_id = self.player_select_combo.itemData(index)
+        print(f"Selected player with ID: {selected_player_id}")
 
         today = getToday()
 
-        if player_id:
+        if selected_player_id:
             # Update the score entry with the new player id
             global_repo.update_score_entry_player(
-                self.button_id, player_id, today)
-            self.update_ui()
-        else:
-            # Handle case where no player is selected
-            self.info_label.setText("Select player")
-            self.score_label.setText("")
-            self.speed_label.setText("")
+                self.button_id, selected_player_id, today)
+
+        self.update_ui()
 
     def get_player_id_by_name(self, name):
         # Retrieve player ID based on name. Implementation depends on how you store player IDs.
@@ -472,13 +480,13 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def get_all_player_names(self):
+    def get_all_players(self):
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT name FROM player")
-            names = cursor.fetchall()
-            return [name[0] for name in names]  # Extract names from tuples
+            cursor.execute("SELECT id, name FROM player")
+            players = cursor.fetchall()
+            return players  # Extract names from tuples
         finally:
             cursor.close()
             conn.close()
@@ -488,10 +496,12 @@ class ScoreRepository:
         cursor = conn.cursor()
         try:
             cursor.execute("""
-                UPDATE score
-                SET player_id = ?
-                WHERE button_id = ? AND date = ?
-            """, (new_player_id, button_id, date))
+                INSERT INTO score (button_id, player_id, date, presses, startedAt, stoppedAt)
+                VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT(button_id, date) DO UPDATE SET 
+                    player_id = excluded.player_id,
+                    startedAt = CURRENT_TIMESTAMP
+            """, (button_id, new_player_id, date))
             conn.commit()
         finally:
             cursor.close()
@@ -546,7 +556,7 @@ def bootstrap():
     locale.setlocale(locale.LC_ALL, 'nb_NO.UTF-8')  # Norwegian Bokmål locale
 
     app = QApplication(sys.argv)
-    demo = AppDemo()
+    global demo = AppDemo()
     demo.show()
     sys.exit(app.exec_())
 

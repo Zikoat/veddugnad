@@ -10,3 +10,6 @@ pip install -r requirements.txt
 Get-Content create_db.sql | sqlite3 highscores.db
 python3 veddugnad.py
 ```
+
+## tasks
+
