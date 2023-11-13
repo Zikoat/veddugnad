@@ -6,10 +6,14 @@ import sys
 import keyboard
 import locale
 import sqlite3
+from PyQt5.QtWidgets import (QGroupBox, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout,
+                             QPushButton, QComboBox, QCompleter)
+from PyQt5.QtCore import QTimer
+import keyboard
 
 # File paths
 COUNT_FILE = 'counters.json'
-BG_IMAGE_FILE = 'bg.png'
+BG_IMAGE_FILE = 'bg_white.png'
 
 BUTTON_TIMEOUT_SECONDS = 3
 
@@ -59,7 +63,7 @@ class AppDemo(QWidget):
         main_layout.addLayout(player_boxes_layout, 2)
         # Set background image
         palette = QPalette()
-        pixmap = QPixmap("bg.png").scaled(
+        pixmap = QPixmap(BG_IMAGE_FILE).scaled(
             self.width(), self.height(), Qt.IgnoreAspectRatio)
         palette.setBrush(QPalette.Background, QBrush(pixmap))
         self.setPalette(palette)
@@ -71,7 +75,7 @@ class AppDemo(QWidget):
     def resizeEvent(self, event):
         # Update the background image to fit the new size of the window
         palette = QPalette()
-        pixmap = QPixmap("bg.png").scaled(
+        pixmap = QPixmap(BG_IMAGE_FILE).scaled(
             self.width(), self.height(), Qt.IgnoreAspectRatio)
         palette.setBrush(QPalette.Background, QBrush(pixmap))
         self.setPalette(palette)
@@ -137,63 +141,123 @@ class PlayerBox(QGroupBox):
         self.timer.timeout.connect(self.timeout)
         self.timer.setInterval(BUTTON_TIMEOUT_SECONDS * 1000)
 
-        # add keyboard hotkeys for f1 through f6
+        # Add keyboard hotkeys for f1 through f6
         keyboard.add_hotkey(f'f{button_id}', self.on_hotkey_pressed)
 
         self.initUI()
+        self.update_ui()  # Populate initial data
 
     def initUI(self):
         self.layout = QVBoxLayout()
 
-        # Adding name input
-        self.name_input = QLineEdit()
-        self.name_input.textChanged.connect(self.update_name)
-        self.name_input.setStyleSheet("""
-            font-size: 20px;
-            height: 40px;
-            padding: 5px 10px;
-        """)
-        self.layout.addWidget(self.name_input)
+        # Player selection
+        self.player_select_combo = QComboBox()
+        self.player_select_combo.setEditable(True)
+        self.player_select_combo.setInsertPolicy(QComboBox.NoInsert)
+        self.player_select_combo.completer().setCompletionMode(QCompleter.PopupCompletion)
 
-        # Creating a container for score and speed, centered horizontally
-        score_speed_container = QVBoxLayout()
+        self.layout.addWidget(self.player_select_combo)
 
-        # Adding score label with increased font size
+        # Information display area
+        self.info_label = QLabel("Select player")
+        self.layout.addWidget(self.info_label, alignment=Qt.AlignCenter)
+
+        # Plus button next to combo box
+        self.add_player_button = QPushButton('New player')
+        self.add_player_button.clicked.connect(self.on_add_player)
+        # Logic to enable/disable button based on combo box state
+        self.layout.addWidget(self.add_player_button)
+
+        # Score and speed display
         self.score_label = QLabel()
         self.score_label.setStyleSheet("font-size: 80px;")
-        score_speed_container.addWidget(
-            self.score_label, alignment=Qt.AlignCenter)
+        self.layout.addWidget(self.score_label, alignment=Qt.AlignCenter)
 
-        # Adding speed label below score label
         self.speed_label = QLabel()
-        score_speed_container.addWidget(
-            self.speed_label, alignment=Qt.AlignCenter)
+        self.layout.addWidget(self.speed_label, alignment=Qt.AlignCenter)
 
-        self.layout.addLayout(score_speed_container)
         self.setLayout(self.layout)
 
     def update_ui(self):
+        player_names = global_repo.get_all_player_names()
+        self.player_select_combo.clear()
+        self.player_select_combo.addItems(player_names)
+
         today = getToday()
-        player_data = global_repo.get_player_score_data(today, self.button_id)
+        score_entry = global_repo.get_score_entry(self.button_id, today)
 
-        if player_data:
-            name, score, startedAt, stoppedAt, speed = player_data
-            self.score_label.setText(str(score))
-            self.name_input.setText(name if name else '')
-
-            if score > 1 and startedAt and stoppedAt:
-                self.speed_label.setText(f"{speed:.2f} sekunder per sekk")
-            else:
-                self.speed_label.setText("")
+        if score_entry:
+            player_id = score_entry['player_id']
+            self.player_select_combo.setCurrentIndex(
+                player_names.index(score_entry['player_name']))
+            self.handle_player_states(score_entry)
         else:
-            # Handle the case where no data is returned
-            self.score_label.setText("0")
-            self.name_input.setText("")
+            self.info_label.setText("Select player")
+            self.score_label.setText("")
+            self.speed_label.setText("")
+            self.player_select_combo.setCurrentIndex(-1)  # Reset selection
+
+    def handle_player_states(self, player_data):
+        # Check if score is zero for today
+        if player_data['score'] == 0:
+            # Determine if the player is new or existing
+            is_new_player = self.check_if_new_player(player_data['player_id'])
+            if is_new_player:
+                # New player, no score today
+                self.info_label.setText(
+                    f"{player_data['player_name']} is new. Press button to start.")
+            else:
+                # Existing player, no score today
+                self.info_label.setText(
+                    f"{player_data['player_name']} - press button to start.")
+        else:
+            # Player with score today
+            self.info_label.setText(
+                f"Score: {player_data['score']}")
+            self.speed_label.setText(
+                f"Speed: {player_data['speed']:.2f} sekunder per sekk")
+
+    def check_if_new_player(self, player_id):
+        # Get the current date
+        today = getToday()
+
+        # Query the database to check for scores before today
+        has_previous_scores = global_repo.check_player_scores_before_date(
+            player_id, today)
+
+        # If the player has no scores before today, they are new
+        return not has_previous_scores
+
+    def on_player_changed(self, index):
+        player_name = self.player_select_combo.currentText()
+        player_id = self.get_player_id_by_name(player_name)
+
+        print(player_name)
+        print(player_id)
+
+        today = getToday()
+
+        if player_id:
+            # Update the score entry with the new player id
+            global_repo.update_score_entry_player(
+                self.button_id, player_id, today)
+            self.update_ui()
+        else:
+            # Handle case where no player is selected
+            self.info_label.setText("Select player")
+            self.score_label.setText("")
             self.speed_label.setText("")
 
+    def get_player_id_by_name(self, name):
+        # Retrieve player ID based on name. Implementation depends on how you store player IDs.
+        pass
+
     def on_hotkey_pressed(self):
-        # Emit the signal with a lambda function as an argument that calls your update method
         self.hotkey_signal.hotkey_pressed.emit(lambda: self.press_button())
+
+    def timeout(self):
+        # Handle timeout events
+        pass
 
     def update_name(self):
         today = getToday()
@@ -201,7 +265,15 @@ class PlayerBox(QGroupBox):
         update_signal.update_ui_signal.emit()
 
     def press_button(self):
-        if not self.timer.isActive():
+        print("Button pressed")
+        today = getToday()
+        selected_player_id = global_repo.get_player_score_data(
+            today, self.button_id)
+        print("Selected player:", selected_player_id)
+        print("Timer active:", self.timer.isActive())
+
+        if selected_player_id and not self.timer.isActive():
+            print("Incrementing score")
             today = getToday()
             global_repo.increment_score(self.button_id, today)
             # Change to a darker color
@@ -213,6 +285,12 @@ class PlayerBox(QGroupBox):
     def timeout(self):
         self.timer.stop()
         self.setStyleSheet("")  # Reset to the original style
+        self.update_ui()
+
+    def on_add_player(self):
+        player_name = self.player_select_combo.currentText().strip()
+        global_repo.create_player_and_upsert_score(
+            player_name, self.button_id, getToday())
         self.update_ui()
 
 
@@ -249,14 +327,7 @@ class ScoreRepository:
                 cursor.execute(
                     "UPDATE player SET name=? WHERE id=?", (new_name, player_id))
             else:
-                cursor.execute(
-                    "INSERT INTO player (name) VALUES (?)", (new_name,))
-                new_player_id = cursor.lastrowid
-
-                cursor.execute("""
-                    INSERT INTO score (player_id, button_id, date)
-                    VALUES (?, ?, ?)
-                """, (new_player_id, button_id, date))
+                throw("No player found for button_id and date")
 
             conn.commit()
         finally:
@@ -397,6 +468,72 @@ class ScoreRepository:
         except Exception as e:
             # Handle exceptions if needed
             print("Error:", e)
+        finally:
+            cursor.close()
+            conn.close()
+
+    def get_all_player_names(self):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT name FROM player")
+            names = cursor.fetchall()
+            return [name[0] for name in names]  # Extract names from tuples
+        finally:
+            cursor.close()
+            conn.close()
+
+    def update_score_entry_player(self, button_id, new_player_id, date):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                UPDATE score
+                SET player_id = ?
+                WHERE button_id = ? AND date = ?
+            """, (new_player_id, button_id, date))
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+
+    def get_score_entry(self, button_id, date):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT ds.player_id, ds.player_name, ds.score, ds.startedAt, 
+                    ds.stoppedAt, ds.speed
+                FROM daily_scores ds
+                WHERE ds.button_id = ? AND ds.date = ?
+            """, (button_id, date))
+            entry = cursor.fetchone()
+            if entry:
+                return {
+                    'player_id': entry[0],
+                    'player_name': entry[1],
+                    'score': entry[2],
+                    'startedAt': entry[3],
+                    'stoppedAt': entry[4],
+                    'speed': entry[5]
+                }
+            else:
+                return None
+        finally:
+            cursor.close()
+            conn.close()
+
+    def check_player_scores_before_date(self, player_id, date):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT COUNT(*) FROM score WHERE player_id = ? AND date < ?", (player_id, date))
+            result = cursor.fetchone()
+            return result[0] > 0
+        except Exception as e:
+            print("Error checking player's previous scores:", e)
+            return False
         finally:
             cursor.close()
             conn.close()

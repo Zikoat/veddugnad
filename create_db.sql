@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS score (
     presses INTEGER DEFAULT 0,
     startedAt DATETIME,
     stoppedAt DATETIME,
+    PRIMARY KEY (button_id, date),
     FOREIGN KEY (player_id) REFERENCES player(id),
     FOREIGN KEY (button_id) REFERENCES button(button_id)
 );
