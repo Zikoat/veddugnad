@@ -231,19 +231,22 @@ class PlayerBox(QGroupBox):
                     # New player, no score today
                     self.info_label.setText(
                         f"Press button to start.")
+                    self.score_label.setText("")
                     self.add_player_button.hide()
                     self.player_select_combo.setEnabled(True)
                 else:
                     # Existing player, no score today
                     self.info_label.setText(
                         f"Press button to start.")
+                    self.score_label.setText("")
                     self.add_player_button.show()
                     self.player_select_combo.setEnabled(True)
 
             else:
                 # Player with score today
-                self.info_label.setText(
-                    f"Score: {score_entry['score']}")
+                self.info_label.setText("")
+                self.score_label.setText(
+                    f"{score_entry['score']}")
                 self.speed_label.setText(
                     f"Speed: {score_entry['speed']:.2f} sekunder per sekk")
                 self.add_player_button.hide()

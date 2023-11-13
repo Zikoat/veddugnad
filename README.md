@@ -13,12 +13,15 @@ python3 veddugnad.py
 
 ## tasks
 
-move mock time
+be able to delete player with no scores
 fix crash on edit non selected player(disable or hide edit button)
 fix crash on edit name to be same as other player
     dont save player on name, but on ok. show error if name is taken
     show error when player name is empty
-larger score text
-be able to delete player with no scores
 add breaks
 test mock time while running
+dont show zero scores on leaderboard
+move mock time
+error on player add when player is selected
+fix speed calculation
+fix date display, add year and weekday
