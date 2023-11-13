@@ -1,3 +1,4 @@
 myenv/
 backup/
 *.db
+mock_hours.txt
