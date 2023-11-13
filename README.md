@@ -13,7 +13,9 @@ python3 veddugnad.py
 
 ## tasks
 
-be able to delete player with no scores
+test delete player
+on delete, update ui
+on delete player cascade scores
 fix crash on edit non selected player(disable or hide edit button)
 fix crash on edit name to be same as other player
     dont save player on name, but on ok. show error if name is taken
