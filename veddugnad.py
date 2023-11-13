@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer, QTimer, pyqtSignal, QObject, Qt
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QGroupBox, QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QScrollArea, QGroupBox, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView
-from PyQt5.QtGui import QPalette, QBrush, QPixmap
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QGroupBox, QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QScrollArea, QGroupBox, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView,QStyle
+from PyQt5.QtGui import QPalette, QBrush, QPixmap,QIcon
+from PyQt5.QtCore import QSize
 from datetime import datetime
 import sys
 import keyboard
@@ -10,14 +11,13 @@ from PyQt5.QtWidgets import (QGroupBox, QVBoxLayout, QLineEdit, QLabel, QHBoxLay
                              QPushButton, QComboBox, QCompleter)
 from PyQt5.QtCore import QTimer
 import keyboard
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QPushButton
+
 
 # File paths
 COUNT_FILE = 'counters.json'
 BG_IMAGE_FILE = 'bg_white.png'
-
 BUTTON_TIMEOUT_SECONDS = 3
-
-# Signal class for updating UI
 
 
 class UpdateSignal(QObject):
@@ -26,10 +26,8 @@ class UpdateSignal(QObject):
 
 update_signal = UpdateSignal()
 
-# Main application window
 
-
-class AppDemo(QWidget):
+class VedApp(QWidget):
     def __init__(self):
         super().__init__()
         self.hotkey_signal = HotkeySignal()
@@ -145,23 +143,42 @@ class PlayerBox(QGroupBox):
         keyboard.add_hotkey(f'f{button_id}', self.on_hotkey_pressed)
 
         self.initUI()
-        self.update_ui()  # Populate initial data
 
     def initUI(self):
         self.layout = QVBoxLayout()
+
+        topbar = QHBoxLayout()
+
         self.player_select_combo = QComboBox()
         self.player_select_combo.setEditable(True)
         self.player_select_combo.setInsertPolicy(QComboBox.NoInsert)
         self.player_select_combo.completer().setCompletionMode(QCompleter.PopupCompletion)
         self.player_select_combo.currentIndexChanged.connect(self.on_player_changed)
-        self.layout.addWidget(self.player_select_combo)
+
+        topbar.addWidget(self.player_select_combo)
+
+        self.edit_player_button = QPushButton()
+        self.edit_player_button.setIcon(QIcon("cog_icon.svg"))  # Replace with path to your cog icon
+        self.edit_player_button.setIconSize(QSize(16, 16))  # Adjust icon size as needed
+
+
+        self.edit_player_button.clicked.connect(self.on_edit_player_clicked)
+        topbar.addWidget(self.edit_player_button)
+
+
+
+
+        topbar.setStretch(0, 1)  # Give more space to the combo box
+        topbar.setStretch(1, 0)  # Less space for the button
+
+        self.layout.addLayout(topbar)
 
         # Information display area
         self.info_label = QLabel("Select player")
         self.layout.addWidget(self.info_label, alignment=Qt.AlignCenter)
 
         # Plus button next to combo box
-        self.add_player_button = QPushButton('New player')
+        self.add_player_button = QPushButton("Add player")
         self.add_player_button.clicked.connect(self.on_add_player)
         # Logic to enable/disable button based on combo box state
         self.layout.addWidget(self.add_player_button)
@@ -177,7 +194,8 @@ class PlayerBox(QGroupBox):
         self.setLayout(self.layout)
 
     def update_ui(self):
-        players = global_repo.get_all_players()
+        today = getToday()
+        players = global_repo.get_combobox_players(today, self.button_id)
         
         self.player_select_combo.currentIndexChanged.disconnect(self.on_player_changed)
         self.player_select_combo.clear()
@@ -185,19 +203,44 @@ class PlayerBox(QGroupBox):
         for player_id, player_name in players:
             self.player_select_combo.addItem(player_name, player_id)
 
-        today = getToday()
         score_entry = global_repo.get_score_entry(self.button_id, today)
 
         if score_entry:
             player_id = score_entry['player_id']
             player_index = self.find_combobox_player_index_by_id(player_id)
             self.player_select_combo.setCurrentIndex(player_index)
-            self.handle_player_states(score_entry)
+            # Check if score is zero for today
+            if score_entry['score'] == 0:
+                # Determine if the player is new or existing
+                is_new_player = self.check_if_new_player(score_entry['player_id'])
+                if is_new_player:
+                    # New player, no score today
+                    self.info_label.setText(
+                        f"{score_entry['player_name']} is new. Press button to start.")
+                    self.add_player_button.hide()
+                    self.player_select_combo.setEnabled(False)
+                else:
+                    # Existing player, no score today
+                    self.info_label.setText(
+                        f"{score_entry['player_name']} - press button to start.")
+                    self.add_player_button.show()
+                    self.player_select_combo.setEnabled(False)
+
+            else:
+                # Player with score today
+                self.info_label.setText(
+                    f"Score: {score_entry['score']}")
+                self.speed_label.setText(
+                    f"Speed: {score_entry['speed']:.2f} sekunder per sekk")
+                self.add_player_button.hide()
+                self.player_select_combo.setEnabled(False)
+
         else:
             self.info_label.setText("Select player")
             self.score_label.setText("")
             self.speed_label.setText("")
             self.player_select_combo.setCurrentIndex(-1)  # Reset selection
+            self.player_select_combo.show()
             
         self.player_select_combo.currentIndexChanged.connect(self.on_player_changed)
 
@@ -206,31 +249,6 @@ class PlayerBox(QGroupBox):
             if self.player_select_combo.itemData(index) == player_id:
                 return index
         return -1  # Return -1 if player_id not found
-
-    def handle_player_states(self, player_data):
-        # Check if score is zero for today
-        if player_data['score'] == 0:
-            # Determine if the player is new or existing
-            is_new_player = self.check_if_new_player(player_data['player_id'])
-            if is_new_player:
-                # New player, no score today
-                self.info_label.setText(
-                    f"{player_data['player_name']} is new. Press button to start.")
-                self.add_player_button.setEnabled(False)
-            else:
-                # Existing player, no score today
-                self.info_label.setText(
-                    f"{player_data['player_name']} - press button to start.")
-                self.add_player_button.setEnabled(True)
-
-        else:
-            # Player with score today
-            self.info_label.setText(
-                f"Score: {player_data['score']}")
-            self.speed_label.setText(
-                f"Speed: {player_data['speed']:.2f} sekunder per sekk")
-            self.add_player_button.setEnabled(False)
-
 
     def check_if_new_player(self, player_id):
         # Get the current date
@@ -245,7 +263,6 @@ class PlayerBox(QGroupBox):
 
     def on_player_changed(self, index):
         selected_player_id = self.player_select_combo.itemData(index)
-        print(f"Selected player with ID: {selected_player_id}")
 
         today = getToday()
 
@@ -254,7 +271,7 @@ class PlayerBox(QGroupBox):
             global_repo.update_score_entry_player(
                 self.button_id, selected_player_id, today)
 
-        self.update_ui()
+        vedApp.update_ui()
 
     def get_player_id_by_name(self, name):
         # Retrieve player ID based on name. Implementation depends on how you store player IDs.
@@ -267,39 +284,79 @@ class PlayerBox(QGroupBox):
         # Handle timeout events
         pass
 
-    def update_name(self):
-        today = getToday()
-        global_repo.update_name(self.button_id, self.name_input.text(), today)
-        update_signal.update_ui_signal.emit()
-
     def press_button(self):
-        print("Button pressed")
         today = getToday()
         selected_player_id = global_repo.get_player_score_data(
             today, self.button_id)
-        print("Selected player:", selected_player_id)
-        print("Timer active:", self.timer.isActive())
 
         if selected_player_id and not self.timer.isActive():
-            print("Incrementing score")
             today = getToday()
             global_repo.increment_score(self.button_id, today)
             # Change to a darker color
             self.setStyleSheet("background-color: darkgrey;")
 
             self.timer.start()
-            update_signal.update_ui_signal.emit()
+            vedApp.update_ui()
+        else:
+            print("Ignoring button press because no player selected or timer is active")
+
 
     def timeout(self):
         self.timer.stop()
         self.setStyleSheet("")  # Reset to the original style
-        self.update_ui()
+        vedApp.update_ui()
 
     def on_add_player(self):
         player_name = self.player_select_combo.currentText().strip()
         global_repo.create_player_and_upsert_score(
             player_name, self.button_id, getToday())
-        self.update_ui()
+        vedApp.update_ui()
+
+    def on_edit_player_clicked(self):
+        selected_player_id = self.player_select_combo.itemData(self.player_select_combo.currentIndex())
+
+        if selected_player_id is None:
+            raise Exception("No player selected for editing")
+            # Logic to edit the player with the selected ID
+            # This might involve opening a new dialog/window where you can edit player details
+        edit_dialog = EditPlayerDialog(selected_player_id, self)
+        edit_dialog.exec_()  # Assuming EditPlayerDialog is a QDialog or similar
+
+class EditPlayerDialog(QDialog):
+    def __init__(self, player_id, vedApp, parent=None):
+        super().__init__(parent)
+        self.player_id = player_id
+        self.vedApp = vedApp
+
+        self.initUI()
+        self.loadPlayerData()
+
+    def initUI(self):
+        self.layout = QVBoxLayout(self)
+
+        self.name_edit = QLineEdit()
+        self.name_edit.textChanged.connect(self.onNameChanged)
+        self.layout.addWidget(self.name_edit)
+
+        self.ok_button = QPushButton("OK")
+        self.ok_button.clicked.connect(self.onOkClicked)
+        self.layout.addWidget(self.ok_button)
+
+    def loadPlayerData(self):
+        # Load the player's current name from the database using global_repo
+        current_name = global_repo.get_player_name_by_id(self.player_id)
+        self.name_edit.textChanged.disconnect(self.onNameChanged)
+        self.name_edit.setText(current_name)
+        self.name_edit.textChanged.connect(self.onNameChanged)
+
+    def onNameChanged(self, new_name):
+        # Update the player's name in the database on each key press
+        global_repo.update_name(self.player_id, new_name)
+
+    def onOkClicked(self):
+        self.accept()  # Close the dialog
+        vedApp.update_ui()  # Update the main application UI
+
 
 
 def create_leaderboard():
@@ -322,21 +379,11 @@ class ScoreRepository:
     def _get_connection(self):
         return sqlite3.connect(self.db_path)
 
-    def update_name(self, button_id, new_name, date):
+    def update_name(self, player_id, new_name):
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute(
-                "SELECT player_id FROM score WHERE button_id=? AND date=?", (button_id, date))
-            player_id_record = cursor.fetchone()
-
-            if player_id_record:
-                player_id = player_id_record[0]
-                cursor.execute(
-                    "UPDATE player SET name=? WHERE id=?", (new_name, player_id))
-            else:
-                throw("No player found for button_id and date")
-
+            cursor.execute("UPDATE player SET name=? WHERE id=?", (new_name, player_id))
             conn.commit()
         finally:
             cursor.close()
@@ -480,13 +527,18 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def get_all_players(self):
+    def get_combobox_players(self, today,button_id):
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT id, name FROM player")
+            cursor.execute("""
+                SELECT p.id, p.name 
+                FROM player p
+                LEFT JOIN score s ON p.id = s.player_id AND s.date = ?
+                WHERE s.id IS NULL OR (s.button_id = ? AND s.date = ?)
+            """, (today, button_id, today))
             players = cursor.fetchall()
-            return players  # Extract names from tuples
+            return players  # Returns list of tuples (player_id, player_name)
         finally:
             cursor.close()
             conn.close()
@@ -547,6 +599,16 @@ class ScoreRepository:
         finally:
             cursor.close()
             conn.close()
+    def get_player_name_by_id(self, player_id):
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT name FROM player WHERE id = ?", (player_id,))
+            result = cursor.fetchone()
+            return result[0] if result else None
+        finally:
+            cursor.close()
+            conn.close()
 
 
 def bootstrap():
@@ -556,9 +618,9 @@ def bootstrap():
     locale.setlocale(locale.LC_ALL, 'nb_NO.UTF-8')  # Norwegian Bokmål locale
 
     app = QApplication(sys.argv)
-    global demo
-    demo = AppDemo()
-    demo.show()
+    global vedApp
+    vedApp = VedApp()
+    vedApp.show()
     sys.exit(app.exec_())
 
 
