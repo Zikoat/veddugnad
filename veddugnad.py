@@ -3,9 +3,9 @@ import sqlite3
 import sys
 import threading
 import time
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from sqlite3 import Connection
-from typing import Callable, List, Optional, Tuple
 
 import keyboard
 import schedule
@@ -332,7 +332,7 @@ class PlayerBox(QGroupBox):
         vedApp.update_ui()
 
     def on_hotkey_pressed(self) -> None:
-        self.hotkey_signal.hotkey_pressed.emit(lambda: self.press_button())
+        self.hotkey_signal.hotkey_pressed.emit(self.press_button)
 
     def press_button(self) -> None:
         today = getToday()
@@ -480,9 +480,9 @@ from pydantic import BaseModel
 
 
 class PlayerInfo(BaseModel):
-    player_id: Optional[int] = None
-    player_name: Optional[str] = None
-    is_new: Optional[bool] = None
+    player_id: int | None = None
+    player_name: str | None = None
+    is_new: bool | None = None
     today_presses: int = 0
 
 
@@ -495,10 +495,10 @@ class ScoreEntry(BaseModel):
     player_id: int
     player_name: str
     score: int
-    startedAt: Optional[
+    startedAt: (
         str
-    ]  # Assuming these are strings; adjust if they are datetime objects
-    stoppedAt: Optional[str]
+    ) | None  # Assuming these are strings; adjust if they are datetime objects
+    stoppedAt: str | None
     speed: float
 
 
@@ -523,7 +523,7 @@ class ScoreRepository:
 
     def get_player_score_data(
         self, date: str, button_id: int
-    ) -> Optional[Tuple[str, int, str, str, float]]:
+    ) -> tuple[str, int, str, str, float] | None:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -549,7 +549,7 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def get_leaderboard(self) -> List[Tuple[str, str, int, float]]:
+    def get_leaderboard(self) -> list[tuple[str, str, int, float]]:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -692,7 +692,7 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def get_combobox_players(self, today: str, button_id: int) -> List[ComboBoxPlayer]:
+    def get_combobox_players(self, today: str, button_id: int) -> list[ComboBoxPlayer]:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -734,7 +734,7 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def get_score_entry(self, button_id: int, date: str) -> Optional[ScoreEntry]:
+    def get_score_entry(self, button_id: int, date: str) -> ScoreEntry | None:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -790,7 +790,7 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def get_player_name_by_id(self, player_id: int) -> Optional[str]:
+    def get_player_name_by_id(self, player_id: int) -> str | None:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -810,12 +810,10 @@ class ScoreRepository:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            # Check if the player has any scores greater than 0
             cursor.execute(
                 "SELECT EXISTS(SELECT 1 FROM score WHERE player_id = ? AND presses > 0)",
                 (player_id,),
             )
-            # cast fetchone result to tuple or None
             result = cursor.fetchone()
 
             if result is None:

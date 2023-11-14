@@ -4,10 +4,10 @@ repos:
   rev: 2023.6.1
   hooks:
     - id: shed
-      # args: [--refactor, --py311-plus]
+      args: [--refactor, --py311-plus]
       types_or: [python, pyi, markdown, rst]
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: 'v1.7.0'  # Replace with the desired version of mypy
+  rev: 'v1.7.0'
   hooks:
     - id: mypy
       args: [--python-executable, .\myenv\Scripts\python.exe]
