@@ -28,13 +28,14 @@ mypy .\veddugnad.py --strict
 
 ## tasks
 
-show error or handle when player name is empty
-add breaks
-dont show zero scores on leaderboard
-error on player add when player is selected
 fix speed calculation
 fix date display, add year and weekday
+dont show zero scores on leaderboard
 center leaderboard sekker
+add breaks
+error on player add when player is selected
 make combo not editable
-on new player, show input field for name, maybe reuse from edit player
-fix typechecking
+show custom error message when player name is empty when you are oking after edit
+when creating a new player, show input field for name, maybe reuse from edit player. default should be content from combobox, if we still want to use editable combobox.
+add indexes
+load test
