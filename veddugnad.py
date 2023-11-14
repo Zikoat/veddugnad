@@ -1,15 +1,41 @@
 from datetime import datetime, timedelta
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer, QTimer, pyqtSignal, QObject, Qt
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QGroupBox, QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QScrollArea, QGroupBox, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView,QStyle
-from PyQt5.QtGui import QPalette, QBrush, QPixmap,QIcon
+from PyQt5.QtWidgets import (
+    QApplication,
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QGroupBox,
+    QApplication,
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QLineEdit,
+    QScrollArea,
+    QGroupBox,
+    QHBoxLayout,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
+    QStyle,
+)
+from PyQt5.QtGui import QPalette, QBrush, QPixmap, QIcon
 from PyQt5.QtCore import QSize
 from datetime import datetime
 import sys
 import keyboard
 import locale
 import sqlite3
-from PyQt5.QtWidgets import (QGroupBox, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout,
-                             QPushButton, QComboBox, QCompleter)
+from PyQt5.QtWidgets import (
+    QGroupBox,
+    QVBoxLayout,
+    QLineEdit,
+    QLabel,
+    QHBoxLayout,
+    QPushButton,
+    QComboBox,
+    QCompleter,
+)
 from PyQt5.QtCore import QTimer
 import keyboard
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QPushButton
@@ -20,11 +46,11 @@ from PyQt5.QtWidgets import QMessageBox
 import schedule
 import threading
 import time
-from PyQt5.QtCore import  Qt
+from PyQt5.QtCore import Qt
 
 # File paths
-COUNT_FILE = 'counters.json'
-BG_IMAGE_FILE = 'bg_white.png'
+COUNT_FILE = "counters.json"
+BG_IMAGE_FILE = "bg_white.png"
 BUTTON_TIMEOUT_SECONDS = 3
 
 
@@ -75,7 +101,8 @@ class VedApp(QWidget):
         # Set background image
         palette = QPalette()
         pixmap = QPixmap(BG_IMAGE_FILE).scaled(
-            self.width(), self.height(), Qt.IgnoreAspectRatio)
+            self.width(), self.height(), Qt.IgnoreAspectRatio
+        )
         palette.setBrush(QPalette.Background, QBrush(pixmap))
         self.setPalette(palette)
 
@@ -90,10 +117,10 @@ class VedApp(QWidget):
         # Update the background image to fit the new size of the window
         palette = QPalette()
         pixmap = QPixmap(BG_IMAGE_FILE).scaled(
-            self.width(), self.height(), Qt.IgnoreAspectRatio)
+            self.width(), self.height(), Qt.IgnoreAspectRatio
+        )
         palette.setBrush(QPalette.Background, QBrush(pixmap))
         self.setPalette(palette)
-
 
     def execute_function(self, func):
         func()
@@ -101,7 +128,7 @@ class VedApp(QWidget):
     def load_mock_hours(self):
         global mock_hours_increment
         try:
-            with open('mock_hours.txt', 'r') as file:
+            with open("mock_hours.txt", "r") as file:
                 mock_hours_increment = int(file.read())
         except (FileNotFoundError, ValueError):
             mock_hours_increment = 0
@@ -141,8 +168,7 @@ class LeaderboardWidget(QScrollArea):
         self.table = QTableWidget()
         self.setWidget(self.table)
         self.table.setColumnCount(4)
-        self.table.setHorizontalHeaderLabels(
-            ["Dato", "Navn", "Sekker", "Fart"])
+        self.table.setHorizontalHeaderLabels(["Dato", "Navn", "Sekker", "Fart"])
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
 
@@ -158,15 +184,14 @@ class LeaderboardWidget(QScrollArea):
 
             self.table.setItem(row_position, 0, QTableWidgetItem(entry[0]))
             self.table.setItem(row_position, 1, QTableWidgetItem(entry[1]))
-            self.table.setItem(
-                row_position, 2, QTableWidgetItem(str(entry[2])))
-            self.table.setItem(
-                row_position, 3, QTableWidgetItem(f"{entry[3]:.2f} s"))
+            self.table.setItem(row_position, 2, QTableWidgetItem(str(entry[2])))
+            self.table.setItem(row_position, 3, QTableWidgetItem(f"{entry[3]:.2f} s"))
 
 
 class HotkeySignal(QObject):
     # This signal will be emitted when a hotkey is pressed
     hotkey_pressed = pyqtSignal(object)  # The signal carries a callable object
+
 
 # Player box widget
 
@@ -182,7 +207,7 @@ class PlayerBox(QGroupBox):
         self.timer.setInterval(BUTTON_TIMEOUT_SECONDS * 1000)
 
         # Add keyboard hotkeys for f1 through f6
-        keyboard.add_hotkey(f'f{button_id}', self.on_hotkey_pressed)
+        keyboard.add_hotkey(f"f{button_id}", self.on_hotkey_pressed)
 
         self.initUI()
 
@@ -194,15 +219,18 @@ class PlayerBox(QGroupBox):
         self.player_select_combo = QComboBox()
         self.player_select_combo.setEditable(True)
         self.player_select_combo.setInsertPolicy(QComboBox.NoInsert)
-        self.player_select_combo.completer().setCompletionMode(QCompleter.PopupCompletion)
+        self.player_select_combo.completer().setCompletionMode(
+            QCompleter.PopupCompletion
+        )
         self.player_select_combo.currentIndexChanged.connect(self.on_player_changed)
 
         topbar.addWidget(self.player_select_combo)
 
         self.edit_player_button = QPushButton()
-        self.edit_player_button.setIcon(QIcon("cog_icon.svg"))  # Replace with path to your cog icon
+        self.edit_player_button.setIcon(
+            QIcon("cog_icon.svg")
+        )  # Replace with path to your cog icon
         self.edit_player_button.setIconSize(QSize(16, 16))  # Adjust icon size as needed
-
 
         self.edit_player_button.clicked.connect(self.on_edit_player_clicked)
         topbar.addWidget(self.edit_player_button)
@@ -235,7 +263,7 @@ class PlayerBox(QGroupBox):
     def update_ui(self):
         today = getToday()
         players = global_repo.get_combobox_players(today, self.button_id)
-        
+
         self.player_select_combo.currentIndexChanged.disconnect(self.on_player_changed)
         self.player_select_combo.clear()
 
@@ -245,25 +273,23 @@ class PlayerBox(QGroupBox):
         score_entry = global_repo.get_score_entry(self.button_id, today)
 
         if score_entry:
-            player_id = score_entry['player_id']
+            player_id = score_entry["player_id"]
             player_index = self.find_combobox_player_index_by_id(player_id)
             self.player_select_combo.setCurrentIndex(player_index)
             self.edit_player_button.show()
             # Check if score is zero for today
-            if score_entry['score'] == 0:
+            if score_entry["score"] == 0:
                 # Determine if the player is new or existing
-                is_new_player = self.check_if_new_player(score_entry['player_id'])
+                is_new_player = self.check_if_new_player(score_entry["player_id"])
                 if is_new_player:
                     # New player, no score today
-                    self.info_label.setText(
-                        f"Press button to start.")
+                    self.info_label.setText(f"Press button to start.")
                     self.score_label.setText("")
                     self.add_player_button.hide()
                     self.player_select_combo.setEnabled(True)
                 else:
                     # Existing player, no score today
-                    self.info_label.setText(
-                        f"Press button to start.")
+                    self.info_label.setText(f"Press button to start.")
                     self.score_label.setText("")
                     self.add_player_button.show()
                     self.player_select_combo.setEnabled(True)
@@ -271,13 +297,12 @@ class PlayerBox(QGroupBox):
             else:
                 # Player with score today
                 self.info_label.setText("")
-                self.score_label.setText(
-                    f"{score_entry['score']}")
+                self.score_label.setText(f"{score_entry['score']}")
                 self.speed_label.setText(
-                    f"Speed: {score_entry['speed']:.2f} sekunder per sekk")
+                    f"Speed: {score_entry['speed']:.2f} sekunder per sekk"
+                )
                 self.add_player_button.hide()
                 self.player_select_combo.setEnabled(False)
-
 
         else:
             self.info_label.setText("Select player")
@@ -289,8 +314,6 @@ class PlayerBox(QGroupBox):
             self.edit_player_button.hide()
             self.player_select_combo.setEnabled(True)
 
-
-            
         self.player_select_combo.currentIndexChanged.connect(self.on_player_changed)
 
     def find_combobox_player_index_by_id(self, player_id):
@@ -305,7 +328,8 @@ class PlayerBox(QGroupBox):
 
         # Query the database to check for scores before today
         has_previous_scores = global_repo.check_player_scores_before_date(
-            player_id, today)
+            player_id, today
+        )
 
         # If the player has no scores before today, they are new
         return not has_previous_scores
@@ -318,7 +342,8 @@ class PlayerBox(QGroupBox):
         if selected_player_id:
             # Update the score entry with the new player id
             global_repo.update_score_entry_player(
-                self.button_id, selected_player_id, today)
+                self.button_id, selected_player_id, today
+            )
 
         vedApp.update_ui()
 
@@ -335,8 +360,7 @@ class PlayerBox(QGroupBox):
 
     def press_button(self):
         today = getToday()
-        selected_player_id = global_repo.get_player_score_data(
-            today, self.button_id)
+        selected_player_id = global_repo.get_player_score_data(today, self.button_id)
 
         if selected_player_id and not self.timer.isActive():
             today = getToday()
@@ -349,7 +373,6 @@ class PlayerBox(QGroupBox):
         else:
             print("Ignoring button press because no player selected or timer is active")
 
-
     def timeout(self):
         self.timer.stop()
         self.setStyleSheet("")  # Reset to the original style
@@ -358,11 +381,14 @@ class PlayerBox(QGroupBox):
     def on_add_player(self):
         player_name = self.player_select_combo.currentText().strip()
         global_repo.create_player_and_upsert_score(
-            player_name, self.button_id, getToday())
+            player_name, self.button_id, getToday()
+        )
         vedApp.update_ui()
 
     def on_edit_player_clicked(self):
-        selected_player_id = self.player_select_combo.itemData(self.player_select_combo.currentIndex())
+        selected_player_id = self.player_select_combo.itemData(
+            self.player_select_combo.currentIndex()
+        )
 
         if selected_player_id is None:
             raise Exception("No player selected for editing")
@@ -370,6 +396,7 @@ class PlayerBox(QGroupBox):
             # This might involve opening a new dialog/window where you can edit player details
         edit_dialog = EditPlayerDialog(selected_player_id, self)
         edit_dialog.exec_()  # Assuming EditPlayerDialog is a QDialog or similar
+
 
 class EditPlayerDialog(QDialog):
     def __init__(self, player_id, vedApp, parent=None):
@@ -387,7 +414,9 @@ class EditPlayerDialog(QDialog):
         self.layout.addWidget(self.name_edit)
 
         self.delete_button = QPushButton()
-        self.delete_button.setIcon(QIcon("delete_icon.svg"))  # Set path to your delete icon
+        self.delete_button.setIcon(
+            QIcon("delete_icon.svg")
+        )  # Set path to your delete icon
         self.delete_button.clicked.connect(self.onDeleteClicked)
         self.layout.addWidget(self.delete_button)
 
@@ -399,7 +428,7 @@ class EditPlayerDialog(QDialog):
         # Load the player's current name from the database using global_repo
         current_name = global_repo.get_player_name_by_id(self.player_id)
         self.name_edit.setText(current_name)
-    
+
         if global_repo.can_player_be_deleted(self.player_id):
             self.delete_button.show()
         else:
@@ -418,8 +447,9 @@ class EditPlayerDialog(QDialog):
             self.accept()  # Close the dialog
             vedApp.update_ui()  # Update the main application UI
         except sqlite3.IntegrityError as e:
-            QMessageBox.critical(self, "Error", new_name + " er allerede i bruk.", QMessageBox.Ok)
-
+            QMessageBox.critical(
+                self, "Error", new_name + " er allerede i bruk.", QMessageBox.Ok
+            )
 
 
 class MockDateControls(QWidget):
@@ -436,8 +466,8 @@ class MockDateControls(QWidget):
         self.increment_hour_button = QPushButton("+")
         self.increment_hour_button.clicked.connect(self.increment_mock_hour)
         self.layout.addWidget(self.increment_hour_button)
-        self.increment_hour_button.setFixedSize(25, 25)        
-        
+        self.increment_hour_button.setFixedSize(25, 25)
+
         self.update_ui()
 
     def update_ui(self):
@@ -452,7 +482,7 @@ class MockDateControls(QWidget):
 
     def save_mock_hours(self):
         global mock_hours_increment
-        with open('mock_hours.txt', 'w') as file:
+        with open("mock_hours.txt", "w") as file:
             file.write(str(mock_hours_increment))
 
 
@@ -470,19 +500,20 @@ def getNow():
     global mock_hours_increment
     return datetime.now() + timedelta(hours=mock_hours_increment)
 
+
 def getToday():
     """Returns the current date."""
-    return getNow().strftime('%Y-%m-%d')
+    return getNow().strftime("%Y-%m-%d")
+
 
 class ScoreRepository:
     def __init__(self):
-        self.db_path = 'highscores.db'
+        self.db_path = "highscores.db"
 
     def _get_connection(self):
         conn = sqlite3.connect(self.db_path)
-        conn.execute('PRAGMA foreign_keys = ON;')  # Enable foreign key constraints
+        conn.execute("PRAGMA foreign_keys = ON;")  # Enable foreign key constraints
         return conn
-
 
     def update_name(self, player_id, new_name):
         conn = self._get_connection()
@@ -498,7 +529,8 @@ class ScoreRepository:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT p.name,
                     ds.score,
                     ds.startedAt,
@@ -507,7 +539,9 @@ class ScoreRepository:
                 FROM daily_scores ds
                 LEFT JOIN player p ON ds.player_id = p.id
                 WHERE ds.date = ? AND ds.button_id = ?
-            """, (date, button_id))
+            """,
+                (date, button_id),
+            )
             result = cursor.fetchone()
             return result
         finally:
@@ -518,7 +552,8 @@ class ScoreRepository:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT strftime('%w %d.%m', ds.date) as formatted_date,
                     p.name,
                     ds.score,
@@ -526,7 +561,8 @@ class ScoreRepository:
                 FROM daily_scores ds
                 JOIN player p ON ds.player_id = p.id
                 ORDER BY ds.score DESC, ds.speed ASC;
-            """)
+            """
+            )
             return cursor.fetchall()
         finally:
             cursor.close()
@@ -537,25 +573,34 @@ class ScoreRepository:
         cursor = conn.cursor()
         try:
             # Check if there's a score entry for today and the given button
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT presses FROM score 
                 WHERE button_id = ? AND date = ?
-            """, (button_id, date))
+            """,
+                (button_id, date),
+            )
 
             result = cursor.fetchone()
             if result:
                 # Score exists, increment it
                 new_score = result[0] + 1
-                cursor.execute("""
+                cursor.execute(
+                    """
                     UPDATE score SET presses = ?
                     WHERE button_id = ? AND date = ?
-                """, (new_score, button_id, date))
+                """,
+                    (new_score, button_id, date),
+                )
             else:
                 # No score for today, insert a new record with score of 1
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO score (button_id, date, presses)
                     VALUES (?, ?, 1)
-                """, (button_id, date))
+                """,
+                    (button_id, date),
+                )
 
             conn.commit()
         finally:
@@ -566,7 +611,8 @@ class ScoreRepository:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
             SELECT 
                 p.id AS player_id,
                 p.name AS player_name,
@@ -578,13 +624,15 @@ class ScoreRepository:
                 score s ON p.id = s.player_id
             WHERE 
                 s.button_id = ? AND s.date = CURRENT_DATE
-            """, (button_id, button_id))
+            """,
+                (button_id, button_id),
+            )
             result = cursor.fetchone()
             return {
                 "player_id": result[0] if result else None,
                 "player_name": result[1] if result else None,
                 "is_new": bool(result[2]) if result else None,
-                "today_presses": result[3] if result else 0
+                "today_presses": result[3] if result else 0,
             }
         finally:
             cursor.close()
@@ -594,13 +642,16 @@ class ScoreRepository:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
             INSERT INTO score (player_id, button_id, date, presses, startedAt, stoppedAt)
             VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ON CONFLICT(button_id, date) DO UPDATE SET 
                 player_id = excluded.player_id,
                 startedAt = CURRENT_TIMESTAMP
-            """, (player_id, button_id, date))
+            """,
+                (player_id, button_id, date),
+            )
             conn.commit()
         finally:
             cursor.close()
@@ -611,18 +662,20 @@ class ScoreRepository:
         cursor = conn.cursor()
         try:
             # Step 1: Insert new player
-            cursor.execute(
-                "INSERT INTO player (name) VALUES (?)", (player_name,))
+            cursor.execute("INSERT INTO player (name) VALUES (?)", (player_name,))
             new_player_id = cursor.lastrowid
 
             # Step 2: Upsert into score
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO score (player_id, button_id, date, presses, startedAt, stoppedAt)
                 VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 ON CONFLICT(button_id, date) DO UPDATE SET 
                     player_id = excluded.player_id,
                     startedAt = CURRENT_TIMESTAMP
-            """, (new_player_id, button_id, date))
+            """,
+                (new_player_id, button_id, date),
+            )
 
             conn.commit()
         except Exception as e:
@@ -632,16 +685,19 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def get_combobox_players(self, today,button_id):
+    def get_combobox_players(self, today, button_id):
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT p.id, p.name 
                 FROM player p
                 LEFT JOIN score s ON p.id = s.player_id AND s.date = ?
                 WHERE s.id IS NULL OR (s.button_id = ? AND s.date = ?)
-            """, (today, button_id, today))
+            """,
+                (today, button_id, today),
+            )
             players = cursor.fetchall()
             return players  # Returns list of tuples (player_id, player_name)
         finally:
@@ -652,13 +708,16 @@ class ScoreRepository:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO score (button_id, player_id, date, presses, startedAt, stoppedAt)
                 VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 ON CONFLICT(button_id, date) DO UPDATE SET 
                     player_id = excluded.player_id,
                     startedAt = CURRENT_TIMESTAMP
-            """, (button_id, new_player_id, date))
+            """,
+                (button_id, new_player_id, date),
+            )
             conn.commit()
         finally:
             cursor.close()
@@ -668,21 +727,24 @@ class ScoreRepository:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT ds.player_id, ds.player_name, ds.score, ds.startedAt, 
                     ds.stoppedAt, ds.speed
                 FROM daily_scores ds
                 WHERE ds.button_id = ? AND ds.date = ?
-            """, (button_id, date))
+            """,
+                (button_id, date),
+            )
             entry = cursor.fetchone()
             if entry:
                 return {
-                    'player_id': entry[0],
-                    'player_name': entry[1],
-                    'score': entry[2],
-                    'startedAt': entry[3],
-                    'stoppedAt': entry[4],
-                    'speed': entry[5]
+                    "player_id": entry[0],
+                    "player_name": entry[1],
+                    "score": entry[2],
+                    "startedAt": entry[3],
+                    "stoppedAt": entry[4],
+                    "speed": entry[5],
                 }
             else:
                 return None
@@ -695,7 +757,9 @@ class ScoreRepository:
         cursor = conn.cursor()
         try:
             cursor.execute(
-                "SELECT COUNT(*) FROM score WHERE player_id = ? AND date < ?", (player_id, date))
+                "SELECT COUNT(*) FROM score WHERE player_id = ? AND date < ?",
+                (player_id, date),
+            )
             result = cursor.fetchone()
             return result[0] > 0
         except Exception as e:
@@ -704,6 +768,7 @@ class ScoreRepository:
         finally:
             cursor.close()
             conn.close()
+
     def get_player_name_by_id(self, player_id):
         conn = self._get_connection()
         cursor = conn.cursor()
@@ -720,7 +785,10 @@ class ScoreRepository:
         cursor = conn.cursor()
         try:
             # Check if the player has any scores greater than 0
-            cursor.execute("SELECT EXISTS(SELECT 1 FROM score WHERE player_id = ? AND presses > 0)", (player_id,))
+            cursor.execute(
+                "SELECT EXISTS(SELECT 1 FROM score WHERE player_id = ? AND presses > 0)",
+                (player_id,),
+            )
             result = cursor.fetchone()
             can_delete = result[0] == 0  # True if no scores > 0, False otherwise
             return can_delete
@@ -740,12 +808,13 @@ class ScoreRepository:
 
 
 def bootstrap():
-    locale.setlocale(locale.LC_ALL, 'nb_NO.UTF-8')  # Norwegian Bokmål locale
+    locale.setlocale(locale.LC_ALL, "nb_NO.UTF-8")  # Norwegian Bokmål locale
     global global_repo, vedApp
     global_repo = ScoreRepository()
     app = QApplication(sys.argv)
     vedApp = VedApp()
     vedApp.show()
     sys.exit(app.exec_())
+
 
 bootstrap()
