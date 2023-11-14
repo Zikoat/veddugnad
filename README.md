@@ -23,7 +23,7 @@ shed
 
 ## run typechecker
 ```shell
-mypy .\veddugnad.py
+mypy .\veddugnad.py --strict
 ```
 
 ## tasks

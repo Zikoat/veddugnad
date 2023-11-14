@@ -4,11 +4,13 @@ import sys
 import threading
 import time
 from datetime import datetime, timedelta
+from sqlite3 import Connection
+from typing import Optional
 
 import keyboard
 import schedule
 from PyQt5.QtCore import QObject, QSize, Qt, QTimer, pyqtSignal
-from PyQt5.QtGui import QBrush, QIcon, QPalette, QPixmap
+from PyQt5.QtGui import QBrush, QIcon, QPalette, QPixmap, QResizeEvent
 from PyQt5.QtWidgets import (
     QApplication,
     QComboBox,
@@ -43,7 +45,7 @@ debug_mode = True  # Set to False to hide mock controls
 
 
 class VedApp(QWidget):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.load_mock_hours()
         self.hotkey_signal = HotkeySignal()
@@ -52,7 +54,7 @@ class VedApp(QWidget):
         self.hotkey_signal.hotkey_pressed.connect(self.execute_function)
         self.setup_scheduler()
 
-    def initUI(self):
+    def initUI(self) -> None:
         main_layout = QHBoxLayout(self)
 
         # Vertical layout for mock_date_controls and leaderboard
@@ -93,8 +95,7 @@ class VedApp(QWidget):
         self.setLayout(main_layout)
         self.update_ui()
 
-    def resizeEvent(self, event):
-        # Update the background image to fit the new size of the window
+    def resizeEvent(self, event: QResizeEvent) -> None:
         palette = QPalette()
         pixmap = QPixmap(BG_IMAGE_FILE).scaled(
             self.width(), self.height(), Qt.IgnoreAspectRatio
@@ -105,7 +106,7 @@ class VedApp(QWidget):
     def execute_function(self, func):
         func()
 
-    def load_mock_hours(self):
+    def load_mock_hours(self) -> None:
         global mock_hours_increment
         try:
             with open("mock_hours.txt") as file:
@@ -113,23 +114,23 @@ class VedApp(QWidget):
         except (FileNotFoundError, ValueError):
             mock_hours_increment = 0
 
-    def setup_scheduler(self):
+    def setup_scheduler(self) -> None:
         schedule.every().minute.do(self.scheduled_update_ui)
 
         # Run the scheduler in a separate thread
         scheduler_thread = threading.Thread(target=self.run_scheduler, daemon=True)
         scheduler_thread.start()
 
-    def update_ui(self):
+    def update_ui(self) -> None:
         for player_box in self.player_boxes:
             player_box.update_ui()
         self.leaderboard.update_ui()
 
-    def scheduled_update_ui(self):
+    def scheduled_update_ui(self) -> None:
         print("Scheduled update")
         update_signal.update_ui_signal.emit()
 
-    def run_scheduler(self):
+    def run_scheduler(self) -> None:
         while True:
             schedule.run_pending()
             time.sleep(1)
@@ -139,12 +140,12 @@ class VedApp(QWidget):
 
 
 class LeaderboardWidget(QScrollArea):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setWidgetResizable(True)
         self.initUI()
 
-    def initUI(self):
+    def initUI(self) -> None:
         self.table = QTableWidget()
         self.setWidget(self.table)
         self.table.setColumnCount(4)
@@ -152,7 +153,7 @@ class LeaderboardWidget(QScrollArea):
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
 
-    def update_ui(self):
+    def update_ui(self) -> None:
         # Clear the current table content
         self.table.setRowCount(0)
 
@@ -177,7 +178,7 @@ class HotkeySignal(QObject):
 
 
 class PlayerBox(QGroupBox):
-    def __init__(self, button_id, hotkey_signal):
+    def __init__(self, button_id, hotkey_signal) -> None:
         super().__init__()
         self.button_id = button_id
         self.hotkey_signal = hotkey_signal
@@ -191,7 +192,7 @@ class PlayerBox(QGroupBox):
 
         self.initUI()
 
-    def initUI(self):
+    def initUI(self) -> None:
         self.layout = QVBoxLayout()
 
         topbar = QHBoxLayout()
@@ -240,7 +241,7 @@ class PlayerBox(QGroupBox):
 
         self.setLayout(self.layout)
 
-    def update_ui(self):
+    def update_ui(self) -> None:
         today = getToday()
         players = global_repo.get_combobox_players(today, self.button_id)
 
@@ -296,13 +297,13 @@ class PlayerBox(QGroupBox):
 
         self.player_select_combo.currentIndexChanged.connect(self.on_player_changed)
 
-    def find_combobox_player_index_by_id(self, player_id):
+    def find_combobox_player_index_by_id(self, player_id) -> None:
         for index in range(self.player_select_combo.count()):
             if self.player_select_combo.itemData(index) == player_id:
                 return index
         return -1  # Return -1 if player_id not found
 
-    def check_if_new_player(self, player_id):
+    def check_if_new_player(self, player_id) -> None:
         # Get the current date
         today = getToday()
 
@@ -314,7 +315,7 @@ class PlayerBox(QGroupBox):
         # If the player has no scores before today, they are new
         return not has_previous_scores
 
-    def on_player_changed(self, index):
+    def on_player_changed(self, index) -> None:
         selected_player_id = self.player_select_combo.itemData(index)
 
         today = getToday()
@@ -327,18 +328,14 @@ class PlayerBox(QGroupBox):
 
         vedApp.update_ui()
 
-    def get_player_id_by_name(self, name):
+    def get_player_id_by_name(self, name) -> None:
         # Retrieve player ID based on name. Implementation depends on how you store player IDs.
         pass
 
-    def on_hotkey_pressed(self):
+    def on_hotkey_pressed(self) -> None:
         self.hotkey_signal.hotkey_pressed.emit(lambda: self.press_button())
 
-    def timeout(self):
-        # Handle timeout events
-        pass
-
-    def press_button(self):
+    def press_button(self) -> None:
         today = getToday()
         selected_player_id = global_repo.get_player_score_data(today, self.button_id)
 
@@ -353,19 +350,19 @@ class PlayerBox(QGroupBox):
         else:
             print("Ignoring button press because no player selected or timer is active")
 
-    def timeout(self):
+    def timeout(self) -> None:
         self.timer.stop()
         self.setStyleSheet("")  # Reset to the original style
         vedApp.update_ui()
 
-    def on_add_player(self):
+    def on_add_player(self) -> None:
         player_name = self.player_select_combo.currentText().strip()
         global_repo.create_player_and_upsert_score(
             player_name, self.button_id, getToday()
         )
         vedApp.update_ui()
 
-    def on_edit_player_clicked(self):
+    def on_edit_player_clicked(self) -> None:
         selected_player_id = self.player_select_combo.itemData(
             self.player_select_combo.currentIndex()
         )
@@ -387,7 +384,7 @@ class EditPlayerDialog(QDialog):
         self.initUI()
         self.updateUI()
 
-    def initUI(self):
+    def initUI(self) -> None:
         self.layout = QVBoxLayout(self)
 
         self.name_edit = QLineEdit()
@@ -404,7 +401,7 @@ class EditPlayerDialog(QDialog):
         self.ok_button.clicked.connect(self.onOkClicked)
         self.layout.addWidget(self.ok_button)
 
-    def updateUI(self):
+    def updateUI(self) -> None:
         # Load the player's current name from the database using global_repo
         current_name = global_repo.get_player_name_by_id(self.player_id)
         self.name_edit.setText(current_name)
@@ -414,13 +411,13 @@ class EditPlayerDialog(QDialog):
         else:
             self.delete_button.hide()
 
-    def onDeleteClicked(self):
+    def onDeleteClicked(self) -> None:
         # Confirm deletion
         global_repo.delete_player(self.player_id)
         self.accept()  # Close the dialog
         vedApp.update_ui()  # Update the main application UI
 
-    def onOkClicked(self):
+    def onOkClicked(self) -> None:
         new_name = self.name_edit.text().strip()
         try:
             global_repo.update_name(self.player_id, new_name)
@@ -433,11 +430,11 @@ class EditPlayerDialog(QDialog):
 
 
 class MockDateControls(QWidget):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.initUI()
 
-    def initUI(self):
+    def initUI(self) -> None:
         self.layout = QHBoxLayout(self)
 
         self.mock_time_label = QLabel()
@@ -450,17 +447,17 @@ class MockDateControls(QWidget):
 
         self.update_ui()
 
-    def update_ui(self):
+    def update_ui(self) -> None:
         formatted_time = getNow().strftime("%Y-%m-%d %H:%M")
         self.mock_time_label.setText("Mocked Time: " + formatted_time)
 
-    def increment_mock_hour(self):
+    def increment_mock_hour(self) -> None:
         global mock_hours_increment
         mock_hours_increment += 1
         self.save_mock_hours()
         self.update_ui()
 
-    def save_mock_hours(self):
+    def save_mock_hours(self) -> None:
         global mock_hours_increment
         with open("mock_hours.txt", "w") as file:
             file.write(str(mock_hours_increment))
@@ -475,27 +472,27 @@ def create_leaderboard():
     return leaderboard
 
 
-def getNow():
+def getNow() -> datetime:
     """Returns the current date and time with hours incremented by mock_hours_increment."""
     global mock_hours_increment
     return datetime.now() + timedelta(hours=mock_hours_increment)
 
 
-def getToday():
+def getToday() -> str:
     """Returns the current date."""
     return getNow().strftime("%Y-%m-%d")
 
 
 class ScoreRepository:
-    def __init__(self):
+    def __init__(self) -> None:
         self.db_path = "highscores.db"
 
-    def _get_connection(self):
+    def _get_connection(self) -> Connection:
         conn = sqlite3.connect(self.db_path)
         conn.execute("PRAGMA foreign_keys = ON;")  # Enable foreign key constraints
         return conn
 
-    def update_name(self, player_id, new_name):
+    def update_name(self, player_id: int, new_name: str) -> None:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -505,7 +502,7 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def get_player_score_data(self, date, button_id):
+    def get_player_score_data(self, date: str, button_id: int):
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -528,7 +525,7 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def get_leaderboard(self):
+    def get_leaderboard(self) -> list:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -548,7 +545,7 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def increment_score(self, button_id, date):
+    def increment_score(self, button_id: int, date: str) -> None:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -587,7 +584,7 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def get_player_info(self, button_id):
+    def get_player_info(self, button_id: int) -> dict:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -618,7 +615,7 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def upsert_score(self, button_id, player_id, date):
+    def upsert_score(self, button_id: int, player_id: int, date: str) -> None:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -637,7 +634,9 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def create_player_and_upsert_score(self, player_name, button_id, date):
+    def create_player_and_upsert_score(
+        self, player_name: str, button_id: int, date: str
+    ) -> None:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -665,7 +664,7 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def get_combobox_players(self, today, button_id):
+    def get_combobox_players(self, today: str, button_id: int) -> list:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -684,7 +683,9 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def update_score_entry_player(self, button_id, new_player_id, date):
+    def update_score_entry_player(
+        self, button_id: int, new_player_id: int, date: str
+    ) -> None:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -703,7 +704,7 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def get_score_entry(self, button_id, date):
+    def get_score_entry(self, button_id: int, date: str) -> dict | None:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -732,7 +733,7 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def check_player_scores_before_date(self, player_id, date):
+    def check_player_scores_before_date(self, player_id: int, date: str) -> bool:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -741,7 +742,17 @@ class ScoreRepository:
                 (player_id, date),
             )
             result = cursor.fetchone()
-            return result[0] > 0
+
+            if result is None:
+                return False
+            if not isinstance(result, tuple):
+                raise TypeError("Unexpected result type from the database query.")
+
+            count = result[0]
+            if not isinstance(count, int):
+                raise ValueError("Expected an integer count from the database")
+
+            return count > 0
         except Exception as e:
             print("Error checking player's previous scores:", e)
             return False
@@ -749,18 +760,23 @@ class ScoreRepository:
             cursor.close()
             conn.close()
 
-    def get_player_name_by_id(self, player_id):
+    def get_player_name_by_id(self, player_id: int) -> Optional[str]:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
             cursor.execute("SELECT name FROM player WHERE id = ?", (player_id,))
             result = cursor.fetchone()
+            if result is None:
+                return None
+            if not isinstance(result, tuple):
+                raise TypeError("Unexpected result type from the database query.")
+
             return result[0] if result else None
         finally:
             cursor.close()
             conn.close()
 
-    def can_player_be_deleted(self, player_id):
+    def can_player_be_deleted(self, player_id: int) -> bool:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -769,14 +785,26 @@ class ScoreRepository:
                 "SELECT EXISTS(SELECT 1 FROM score WHERE player_id = ? AND presses > 0)",
                 (player_id,),
             )
+            # cast fetchone result to tuple or None
             result = cursor.fetchone()
-            can_delete = result[0] == 0  # True if no scores > 0, False otherwise
+
+            if result is None:
+                raise ValueError(f"No result returned for player ID {player_id}")
+
+            if (
+                not isinstance(result, tuple)
+                or not len(result) == 1
+                or not isinstance(result[0], int)
+            ):
+                raise TypeError(f"Unexpected result type: {result}")
+
+            can_delete = result[0] == 0
             return can_delete
         finally:
             cursor.close()
             conn.close()
 
-    def delete_player(self, player_id):
+    def delete_player(self, player_id: int) -> None:
         conn = self._get_connection()
         cursor = conn.cursor()
         try:
@@ -787,12 +815,14 @@ class ScoreRepository:
             conn.close()
 
 
-def bootstrap():
+global_repo = ScoreRepository()
+app = QApplication(sys.argv)
+vedApp = VedApp()
+
+
+def bootstrap() -> None:
     locale.setlocale(locale.LC_ALL, "nb_NO.UTF-8")  # Norwegian Bokmål locale
-    global global_repo, vedApp
-    global_repo = ScoreRepository()
-    app = QApplication(sys.argv)
-    vedApp = VedApp()
+    global vedApp
     vedApp.show()
     sys.exit(app.exec_())
 
