@@ -13,16 +13,12 @@ python3 veddugnad.py
 
 ## tasks
 
-fix crash on edit non selected player(disable or hide edit button)
-fix crash on edit name to be same as other player
-    dont save player on name, but on ok. show error if name is taken
-    show error when player name is empty
+show error or handle when player name is empty
 add breaks
-on new day, enable combo, show new player button. 
-update ui every 1 min
 dont show zero scores on leaderboard
-move mock time
 error on player add when player is selected
 fix speed calculation
 fix date display, add year and weekday
 center leaderboard sekker
+make combo not editable
+on new player, show input field for name, maybe reuse from edit player

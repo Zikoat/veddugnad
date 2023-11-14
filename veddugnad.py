@@ -17,6 +17,10 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QPushButton
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMessageBox
+import schedule
+import threading
+import time
+from PyQt5.QtCore import QMetaObject, Qt
 
 # File paths
 COUNT_FILE = 'counters.json'
@@ -39,19 +43,24 @@ class VedApp(QWidget):
         self.hotkey_signal = HotkeySignal()
         self.initUI()
         update_signal.update_ui_signal.connect(self.update_ui)
-
         self.hotkey_signal.hotkey_pressed.connect(self.execute_function)
+        self.setup_scheduler()
 
     def initUI(self):
-        main_layout = QHBoxLayout()
+        main_layout = QHBoxLayout(self)
 
-        # Adding leaderboard
+        # Vertical layout for mock_date_controls and leaderboard
+        left_column_layout = QVBoxLayout()
+
+        if debug_mode:
+            self.mock_date_controls = MockDateControls()
+            left_column_layout.addWidget(self.mock_date_controls)
+
         self.leaderboard = LeaderboardWidget()
-        main_layout.addWidget(self.leaderboard, 1)
+        left_column_layout.addWidget(self.leaderboard)
 
-        # Create an attribute to hold player boxes
+        # Layout for player boxes
         self.player_boxes = []
-
         player_boxes_layout = QHBoxLayout()
         for i in range(0, 6, 2):  # Creating pairs
             pair_layout = QVBoxLayout()
@@ -59,12 +68,10 @@ class VedApp(QWidget):
             for j in range(2):  # Two player boxes per pair
                 player_box = PlayerBox(str(i + j + 1), self.hotkey_signal)
                 pair_layout.addWidget(player_box)
-                # Add player box to the list
                 self.player_boxes.append(player_box)
 
             player_boxes_layout.addLayout(pair_layout)
 
-        main_layout.addLayout(player_boxes_layout, 2)
         # Set background image
         palette = QPalette()
         pixmap = QPixmap(BG_IMAGE_FILE).scaled(
@@ -72,12 +79,11 @@ class VedApp(QWidget):
         palette.setBrush(QPalette.Background, QBrush(pixmap))
         self.setPalette(palette)
 
+        # Add the left column and player boxes layout to the main layout
+        main_layout.addLayout(left_column_layout, 1)
+        main_layout.addLayout(player_boxes_layout, 2)
+
         self.setLayout(main_layout)
-
-        if debug_mode:
-            self.mock_date_controls = MockDateControls()
-            main_layout.addWidget(self.mock_date_controls)
-
         self.update_ui()
 
     def resizeEvent(self, event):
@@ -88,10 +94,6 @@ class VedApp(QWidget):
         palette.setBrush(QPalette.Background, QBrush(pixmap))
         self.setPalette(palette)
 
-    def update_ui(self):
-        for player_box in self.player_boxes:
-            player_box.update_ui()
-        self.leaderboard.update_ui()
 
     def execute_function(self, func):
         func()
@@ -103,6 +105,27 @@ class VedApp(QWidget):
                 mock_hours_increment = int(file.read())
         except (FileNotFoundError, ValueError):
             mock_hours_increment = 0
+
+    def setup_scheduler(self):
+        schedule.every().minute.do(self.scheduled_update_ui)
+
+        # Run the scheduler in a separate thread
+        scheduler_thread = threading.Thread(target=self.run_scheduler, daemon=True)
+        scheduler_thread.start()
+
+    def update_ui(self):
+        for player_box in self.player_boxes:
+            player_box.update_ui()
+        self.leaderboard.update_ui()
+
+    def scheduled_update_ui(self):
+        print("Scheduled update")
+        update_signal.update_ui_signal.emit()
+
+    def run_scheduler(self):
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
 
 
 # Leaderboard widget
@@ -225,6 +248,7 @@ class PlayerBox(QGroupBox):
             player_id = score_entry['player_id']
             player_index = self.find_combobox_player_index_by_id(player_id)
             self.player_select_combo.setCurrentIndex(player_index)
+            self.edit_player_button.show()
             # Check if score is zero for today
             if score_entry['score'] == 0:
                 # Determine if the player is new or existing
@@ -254,6 +278,7 @@ class PlayerBox(QGroupBox):
                 self.add_player_button.hide()
                 self.player_select_combo.setEnabled(False)
 
+
         else:
             self.info_label.setText("Select player")
             self.score_label.setText("")
@@ -261,6 +286,9 @@ class PlayerBox(QGroupBox):
             self.player_select_combo.setCurrentIndex(-1)  # Reset selection
             self.player_select_combo.show()
             self.add_player_button.show()
+            self.edit_player_button.hide()
+            self.player_select_combo.setEnabled(True)
+
 
             
         self.player_select_combo.currentIndexChanged.connect(self.on_player_changed)
@@ -356,7 +384,6 @@ class EditPlayerDialog(QDialog):
         self.layout = QVBoxLayout(self)
 
         self.name_edit = QLineEdit()
-        self.name_edit.textChanged.connect(self.onNameChanged)
         self.layout.addWidget(self.name_edit)
 
         self.delete_button = QPushButton()
@@ -371,9 +398,7 @@ class EditPlayerDialog(QDialog):
     def updateUI(self):
         # Load the player's current name from the database using global_repo
         current_name = global_repo.get_player_name_by_id(self.player_id)
-        self.name_edit.textChanged.disconnect(self.onNameChanged)
         self.name_edit.setText(current_name)
-        self.name_edit.textChanged.connect(self.onNameChanged)
     
         if global_repo.can_player_be_deleted(self.player_id):
             self.delete_button.show()
@@ -386,13 +411,15 @@ class EditPlayerDialog(QDialog):
         self.accept()  # Close the dialog
         vedApp.update_ui()  # Update the main application UI
 
-    def onNameChanged(self, new_name):
-        # Update the player's name in the database on each key press
-        global_repo.update_name(self.player_id, new_name)
-
     def onOkClicked(self):
-        self.accept()  # Close the dialog
-        vedApp.update_ui()  # Update the main application UI
+        new_name = self.name_edit.text().strip()
+        try:
+            global_repo.update_name(self.player_id, new_name)
+            self.accept()  # Close the dialog
+            vedApp.update_ui()  # Update the main application UI
+        except sqlite3.IntegrityError as e:
+            QMessageBox.critical(self, "Error", new_name + " er allerede i bruk.", QMessageBox.Ok)
+
 
 
 class MockDateControls(QWidget):
@@ -406,9 +433,11 @@ class MockDateControls(QWidget):
         self.mock_time_label = QLabel()
         self.layout.addWidget(self.mock_time_label)
 
-        self.increment_hour_button = QPushButton("Increment Hour")
+        self.increment_hour_button = QPushButton("+")
         self.increment_hour_button.clicked.connect(self.increment_mock_hour)
         self.layout.addWidget(self.increment_hour_button)
+        self.increment_hour_button.setFixedSize(25, 25)        
+        
         self.update_ui()
 
     def update_ui(self):
