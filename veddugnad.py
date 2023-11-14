@@ -20,7 +20,7 @@ from PyQt5.QtWidgets import QMessageBox
 import schedule
 import threading
 import time
-from PyQt5.QtCore import QMetaObject, Qt
+from PyQt5.QtCore import  Qt
 
 # File paths
 COUNT_FILE = 'counters.json'
@@ -217,7 +217,7 @@ class PlayerBox(QGroupBox):
         self.layout.addWidget(self.info_label, alignment=Qt.AlignCenter)
 
         # Plus button next to combo box
-        self.add_player_button = QPushButton("Add player")
+        self.add_player_button = QPushButton("New player")
         self.add_player_button.clicked.connect(self.on_add_player)
         # Logic to enable/disable button based on combo box state
         self.layout.addWidget(self.add_player_button)
@@ -740,16 +740,12 @@ class ScoreRepository:
 
 
 def bootstrap():
-    global global_repo
-    global_repo = ScoreRepository()
-
     locale.setlocale(locale.LC_ALL, 'nb_NO.UTF-8')  # Norwegian Bokmål locale
-
+    global global_repo, vedApp
+    global_repo = ScoreRepository()
     app = QApplication(sys.argv)
-    global vedApp
     vedApp = VedApp()
     vedApp.show()
     sys.exit(app.exec_())
-
 
 bootstrap()
