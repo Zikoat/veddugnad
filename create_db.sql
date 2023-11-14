@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS player (
     id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE
+    name TEXT NOT NULL UNIQUE,
+    CHECK (name <> '')
 );
 CREATE TABLE IF NOT EXISTS button (
     button_id INTEGER PRIMARY KEY,
