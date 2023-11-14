@@ -11,6 +11,21 @@ Get-Content create_db.sql | sqlite3 highscores.db
 python3 veddugnad.py
 ```
 
+## update requirements.txt
+```shell
+pip freeze > requirements.txt
+```
+
+## run linter
+```shell
+shed
+```
+
+## run typechecker
+```shell
+mypy .\veddugnad.py
+```
+
 ## tasks
 
 show error or handle when player name is empty
@@ -22,6 +37,4 @@ fix date display, add year and weekday
 center leaderboard sekker
 make combo not editable
 on new player, show input field for name, maybe reuse from edit player
-add linting
-add formatting
-add typechecking
+fix typechecking

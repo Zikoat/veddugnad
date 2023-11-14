@@ -1,52 +1,32 @@
-from datetime import datetime, timedelta
-from PyQt5.QtCore import QObject, pyqtSignal, QTimer, QTimer, pyqtSignal, QObject, Qt
-from PyQt5.QtWidgets import (
-    QApplication,
-    QWidget,
-    QVBoxLayout,
-    QLabel,
-    QGroupBox,
-    QApplication,
-    QWidget,
-    QVBoxLayout,
-    QLabel,
-    QLineEdit,
-    QScrollArea,
-    QGroupBox,
-    QHBoxLayout,
-    QTableWidget,
-    QTableWidgetItem,
-    QHeaderView,
-    QStyle,
-)
-from PyQt5.QtGui import QPalette, QBrush, QPixmap, QIcon
-from PyQt5.QtCore import QSize
-from datetime import datetime
-import sys
-import keyboard
 import locale
 import sqlite3
-from PyQt5.QtWidgets import (
-    QGroupBox,
-    QVBoxLayout,
-    QLineEdit,
-    QLabel,
-    QHBoxLayout,
-    QPushButton,
-    QComboBox,
-    QCompleter,
-)
-from PyQt5.QtCore import QTimer
-import keyboard
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QPushButton
-
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QMessageBox
-import schedule
+import sys
 import threading
 import time
-from PyQt5.QtCore import Qt
+from datetime import datetime, timedelta
+
+import keyboard
+import schedule
+from PyQt5.QtCore import QObject, QSize, Qt, QTimer, pyqtSignal
+from PyQt5.QtGui import QBrush, QIcon, QPalette, QPixmap
+from PyQt5.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QCompleter,
+    QDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
 
 # File paths
 COUNT_FILE = "counters.json"
@@ -128,7 +108,7 @@ class VedApp(QWidget):
     def load_mock_hours(self):
         global mock_hours_increment
         try:
-            with open("mock_hours.txt", "r") as file:
+            with open("mock_hours.txt") as file:
                 mock_hours_increment = int(file.read())
         except (FileNotFoundError, ValueError):
             mock_hours_increment = 0
