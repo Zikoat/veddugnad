@@ -22,3 +22,6 @@ fix date display, add year and weekday
 center leaderboard sekker
 make combo not editable
 on new player, show input field for name, maybe reuse from edit player
+add linting
+add formatting
+add typechecking
