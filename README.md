@@ -18,7 +18,7 @@ pip freeze > requirements.txt
 
 ## run linter
 ```shell
-shed
+shed --refactor --py311-plus
 ```
 
 ## run typechecker
@@ -28,7 +28,6 @@ mypy .\veddugnad.py --strict
 
 ## tasks
 
-fix speed calculation
 fix date display, add year and weekday
 dont show zero scores on leaderboard
 center leaderboard sekker
@@ -39,3 +38,5 @@ show custom error message when player name is empty when you are oking after edi
 when creating a new player, show input field for name, maybe reuse from edit player. default should be content from combobox, if we still want to use editable combobox.
 add indexes
 load test
+dont pass date, but use function to get it. its global.
+dedupe _get_connection
