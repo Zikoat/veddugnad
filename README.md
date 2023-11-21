@@ -25,3 +25,7 @@ shed --refactor --py311-plus
 ```shell
 mypy .\veddugnad.py --strict
 ```
+
+### TODO
+create background
+quotes
