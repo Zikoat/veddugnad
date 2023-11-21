@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS player (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
+    team TEXT CHECK(team IN ('Red', 'Orange', 'Green', 'Blue')),
     CHECK (name <> '')
 );
 CREATE TABLE IF NOT EXISTS button (
@@ -28,7 +29,13 @@ CREATE TABLE IF NOT EXISTS score (
     UNIQUE (button_id, date),
     UNIQUE (player_id, date)
 );
-CREATE VIEW IF NOT EXISTS daily_scores AS
+CREATE TABLE IF NOT EXISTS breaks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    start_time DATETIME NOT NULL,
+    end_time DATETIME NOT NULL
+);
+DROP VIEW IF EXISTS [daily_scores];
+CREATE VIEW daily_scores AS
 SELECT pl.name AS player_name,
     s.presses AS score,
     s.startedAt,
@@ -37,13 +44,34 @@ SELECT pl.name AS player_name,
     s.button_id,
     s.player_id,
     CASE
-        WHEN s.presses > 1 THEN (
-            julianday(s.stoppedAt) - julianday(s.startedAt)
-        ) * 86400 / (s.presses - 1)
+        WHEN s.startedAt IS NOT NULL
+        AND s.stoppedAt IS NOT NULL
+        AND julianday(s.stoppedAt) - julianday(s.startedAt) > 0 THEN s.presses / (
+            (
+                (
+                    (julianday(s.stoppedAt) - julianday(s.startedAt))
+                ) - (
+                    SELECT COALESCE(
+                            SUM(
+                                julianday(b.end_time) - julianday(b.start_time)
+                            ),
+                            0
+                        )
+                    FROM breaks b
+                    WHERE b.start_time >= s.startedAt
+                        AND b.end_time <= s.stoppedAt
+                )
+            ) * 24
+        )
         ELSE 0
-    END as speed
+    END as score_per_hour
 FROM score s
     LEFT JOIN player pl ON s.player_id = pl.id
 GROUP BY pl.name,
     s.date,
     s.button_id;
+    
+CREATE INDEX IF NOT EXISTS idx_score_button_id_date ON score(button_id, date);
+CREATE INDEX IF NOT EXISTS idx_score_player_id_date ON score(player_id, date);
+CREATE INDEX IF NOT EXISTS idx_score_presses ON score(presses);
+CREATE INDEX IF NOT EXISTS idx_breaks_start_end ON breaks(start_time, end_time);
