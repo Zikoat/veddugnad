@@ -18,7 +18,7 @@ pip freeze > requirements.txt
 
 ## run linter
 ```shell
-shed
+shed --refactor --py311-plus
 ```
 
 ## run typechecker
@@ -26,15 +26,6 @@ shed
 mypy .\veddugnad.py --strict
 ```
 
-## tasks
-
-show error or handle when player name is empty
-add breaks
-dont show zero scores on leaderboard
-error on player add when player is selected
-fix speed calculation
-fix date display, add year and weekday
-center leaderboard sekker
-make combo not editable
-on new player, show input field for name, maybe reuse from edit player
-fix typechecking
+### TODO
+create background
+quotes

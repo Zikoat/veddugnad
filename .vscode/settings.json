@@ -1,6 +1,8 @@
 {
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
-      }
+      },
+      "mypy.runUsingActiveInterpreter": true,
+      "mypy.dmypyExecutable": "C:\\Dev\\veddugnad\\myenv\\Scripts\\dmypy.exe"
     
 }
