@@ -63,7 +63,7 @@ class VedApp(QWidget):
         # Vertical layout for mock_date_controls and leaderboard
         left_column_layout = QVBoxLayout()
 
-        if debug_mode:
+        if DEBUG_MODE:
             self.mock_date_controls = MockDateControls()
             left_column_layout.addWidget(self.mock_date_controls)
         self.break_button = QPushButton("Pause")
@@ -299,7 +299,7 @@ class PlayerBox(QGroupBox):
                         f"Fart: {score_entry.score_per_hour:.2f} sekker i timen"
                     )
                 self.add_player_button.hide()
-                self.player_select_combo.setEnabled(False)
+                self.player_select_combo.setEnabled(True)
             if not self.can_press_button():
                 self.setStyleSheet("background-color: darkgrey;")
         else:
@@ -333,8 +333,7 @@ class PlayerBox(QGroupBox):
         selected_player_id = self.player_select_combo.itemData(index)
 
         if selected_player_id:
-            # Update the score entry with the new player id
-            global_repo.update_score_entry_player(self.button_id, selected_player_id)
+            global_repo.select_player(self.button_id, selected_player_id)
 
         vedApp.update_ui()
 
@@ -469,9 +468,8 @@ class NewPlayerDialog(QDialog):
         player_name = self.name_edit.text().strip()
         team = self.team_selector.helmetComboBox.currentText()
         try:
-            global_repo.create_player_and_upsert_score(
-                player_name, self.button_id, team
-            )
+            new_player_id = global_repo.create_player(player_name, team)
+            global_repo.select_player(self.button_id, new_player_id)
             vedApp.update_ui()
             self.accept()  # Close the dialog
         except Exception as e:
@@ -652,46 +650,50 @@ class ScoreRepository:
 
     def increment_score(self, button_id: int) -> None:
         with DatabaseContext() as cursor:
-            date = getToday()
-            now_str = getNow().strftime("%Y-%m-%d %H:%M:%S.%f")
-
-            # Update score entry with conditional logic in SQL
+            # Step 1: Find the player_id for the given button_id and current date
+            today_str = getToday()
             cursor.execute(
                 """
-                UPDATE score
-                SET 
-                    presses = presses + 1,
-                    startedAt = CASE WHEN presses = 0 THEN ? ELSE startedAt END,
-                    stoppedAt = ?
+                SELECT player_id
+                FROM selected_player
                 WHERE button_id = ? AND date = ?
                 """,
-                (now_str, now_str, button_id, date),
+                (button_id, today_str),
             )
+            result = cursor.fetchone()
+            if result:
+                player_id = result[0]
 
-    def create_player_and_upsert_score(
-        self, player_name: str, button_id: int, team: str
-    ) -> None:
+                # Step 2: Insert into presses
+                cursor.execute(
+                    """
+                    INSERT INTO presses (player_id, timestamp)
+                    VALUES (?, ?)
+                    """,
+                    (player_id, getNow()),
+                )
+
+    def create_player(self, player_name: str, team: str) -> int:
         with DatabaseContext() as cursor:
             # Step 1: Insert new player
             cursor.execute(
                 "INSERT INTO player (name, team) VALUES (?, ?)", (player_name, team)
             )
             new_player_id = cursor.lastrowid
+            if new_player_id is None:
+                raise ValueError("No last inserted row ID found")
+            return new_player_id
 
-            # Get current date and time
-            today_str = getToday()
-            now = getNow()
-
-            # Step 2: Upsert into score
+    def select_player(self, button_id: int, player_id: int) -> None:
+        with DatabaseContext() as cursor:
             cursor.execute(
                 """
-                INSERT INTO score (player_id, button_id, date, presses, startedAt, stoppedAt)
-                VALUES (?, ?, ?, 0, ?, ?)
+                INSERT INTO selected_player (player_id, button_id, date)
+                VALUES (?, ?, ?)
                 ON CONFLICT(button_id, date) DO UPDATE SET 
-                    player_id = excluded.player_id,
-                    startedAt = ?
+                    player_id = excluded.player_id
                 """,
-                (new_player_id, button_id, today_str, now, now, now),
+                (player_id, button_id, getToday()),
             )
 
     def get_combobox_players(self, button_id: int) -> list[ComboBoxPlayer]:
@@ -701,8 +703,8 @@ class ScoreRepository:
                 """
                 SELECT p.id, p.name 
                 FROM player p
-                LEFT JOIN score s ON p.id = s.player_id AND s.date = ?
-                WHERE s.id IS NULL OR (s.button_id = ? AND s.date = ?)
+                LEFT JOIN selected_player sp ON p.id = sp.player_id AND sp.date = ?
+                WHERE sp.id IS NULL OR (sp.button_id = ? AND sp.date = ?)
                 """,
                 (today, button_id, today),
             )
@@ -710,23 +712,6 @@ class ScoreRepository:
             return [
                 ComboBoxPlayer(player_id=id, player_name=name) for id, name in players
             ]
-
-    def update_score_entry_player(self, button_id: int, new_player_id: int) -> None:
-        with DatabaseContext() as cursor:
-            # Get current date and time
-            today_str = getToday()
-            now = getNow()
-
-            cursor.execute(
-                """
-                INSERT INTO score (button_id, player_id, date, presses, startedAt, stoppedAt)
-                VALUES (?, ?, ?, 0, ?, ?)
-                ON CONFLICT(button_id, date) DO UPDATE SET 
-                    player_id = excluded.player_id,
-                    startedAt = ?
-                """,
-                (button_id, new_player_id, today_str, now, now, now),
-            )
 
     def get_score_entry(self, button_id: int) -> ScoreEntry | None:
         with DatabaseContext() as cursor:
@@ -828,11 +813,9 @@ class ScoreRepository:
 COUNT_FILE = "counters.json"
 BG_IMAGE_FILE = "bg_white.png"
 BUTTON_TIMEOUT_SECONDS = 3
+DEBUG_MODE = False  # Set to False to hide mock controls
 
 update_signal = UpdateSignal()
-
-debug_mode = False  # Set to False to hide mock controls
-
 
 is_break = False
 
