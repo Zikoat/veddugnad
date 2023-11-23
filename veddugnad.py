@@ -63,7 +63,7 @@ class VedApp(QWidget):
         # Vertical layout for mock_date_controls and leaderboard
         left_column_layout = QVBoxLayout()
 
-        if debug_mode:
+        if DEBUG_MODE:
             self.mock_date_controls = MockDateControls()
             left_column_layout.addWidget(self.mock_date_controls)
         self.break_button = QPushButton("Pause")
@@ -831,11 +831,9 @@ class ScoreRepository:
 COUNT_FILE = "counters.json"
 BG_IMAGE_FILE = "bg_white.png"
 BUTTON_TIMEOUT_SECONDS = 3
+DEBUG_MODE = False  # Set to False to hide mock controls
 
 update_signal = UpdateSignal()
-
-debug_mode = True  # Set to False to hide mock controls
-
 
 is_break = False
 
