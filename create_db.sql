@@ -11,8 +11,7 @@ CREATE TABLE IF NOT EXISTS button (
     hex_color TEXT NOT NULL
 );
 -- Insert buttons
-INSERT
-    OR IGNORE INTO button (button_id, hex_color)
+REPLACE INTO button (button_id, hex_color)
 VALUES (1, '#FF0000'),
     (2, '#00FF00'),
     (3, '#0000FF'),

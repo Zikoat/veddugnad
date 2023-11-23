@@ -313,6 +313,27 @@ class PlayerBox(QGroupBox):
             self.player_select_combo.setEnabled(True)
 
         self.player_select_combo.currentIndexChanged.connect(self.on_player_changed)
+        # Fetch the color for the button
+        hex_color = global_repo.get_button_color(self.button_id).lstrip("#")
+
+        print(hex_color)
+        print(tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4)))
+        # Convert hex color to RGB
+        rgb_color = tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
+
+        # Convert to RGBA for transparency (e.g., 128 for 50% opacity)
+        rgba_color = (*rgb_color, 128)  # RGBA with 50% opacity
+
+        # Apply styles to QGroupBox
+        self.setStyleSheet(
+            f"""
+            QGroupBox {{
+                border: 2px solid rgba{rgba_color};
+                background-color: rgba{rgba_color};
+                border-radius: 10px;
+            }}
+        """
+        )
 
     def find_combobox_player_index_by_id(self, player_id: int) -> int:
         for index in range(self.player_select_combo.count()):
@@ -808,6 +829,23 @@ class ScoreRepository:
                 "INSERT INTO breaks (start_time, end_time) VALUES (?, ?)",
                 (start_time, end_time),
             )
+
+    def get_button_color(self, button_id: int) -> str:
+        with DatabaseContext() as cursor:
+            cursor.execute(
+                "SELECT hex_color FROM button WHERE button_id = ?", (button_id,)
+            )
+            result = cursor.fetchone()
+
+            # Check if result is a tuple with one string element
+            if (
+                isinstance(result, tuple)
+                and len(result) == 1
+                and isinstance(result[0], str)
+            ):
+                return result[0]
+            else:
+                return "#FFFFFF"  # Default to white if not found or if the result is not a string
 
 
 COUNT_FILE = "counters.json"
