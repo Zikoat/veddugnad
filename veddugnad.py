@@ -224,13 +224,13 @@ class PlayerBox(QGroupBox):
         self.main_layout.addLayout(topbar)
 
         # Information display area
-        self.info_label = QLabel("Select player")
+        self.info_label = QLabel("Velg spiller")
         self.main_layout.addWidget(
             self.info_label, alignment=Qt.AlignmentFlag.AlignCenter
         )
 
         # Plus button next to combo box
-        self.add_player_button = QPushButton("New player")
+        self.add_player_button = QPushButton("Ny spiller")
         self.add_player_button.clicked.connect(self.open_new_player_dialog)
         # Logic to enable/disable button based on combo box state
         self.main_layout.addWidget(self.add_player_button)
@@ -303,7 +303,7 @@ class PlayerBox(QGroupBox):
             if not self.can_press_button():
                 self.setStyleSheet("background-color: darkgrey;")
         else:
-            self.info_label.setText("Select player")
+            self.info_label.setText("Velg spiller")
             self.score_label.setText("")
             self.speed_label.setText("")
             self.player_select_combo.setCurrentIndex(-1)  # Reset selection
@@ -550,10 +550,10 @@ class BreakDialog(QDialog):
         pause_label.setStyleSheet("font-size: 24pt;")  # Large text
         layout.addWidget(pause_label)
 
-        info_label = QLabel("No more working now")
+        info_label = QLabel("Slutt å jobb")
         layout.addWidget(info_label)
 
-        continue_button = QPushButton("Continue")
+        continue_button = QPushButton("Fortsett å jobb")
         continue_button.clicked.connect(self.onContinue)
         layout.addWidget(continue_button)
 
@@ -604,9 +604,6 @@ class Player(BaseModel):
     id: int
     name: str
     team: str
-
-
-import sqlite3
 
 
 class DatabaseContext:
@@ -834,7 +831,7 @@ BUTTON_TIMEOUT_SECONDS = 3
 
 update_signal = UpdateSignal()
 
-debug_mode = True  # Set to False to hide mock controls
+debug_mode = False  # Set to False to hide mock controls
 
 
 is_break = False
