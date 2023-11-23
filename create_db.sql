@@ -21,6 +21,7 @@ VALUES (1, '#FF0000'),
     (6, '#00FFFF');
 -- Selected player table
 CREATE TABLE IF NOT EXISTS selected_player (
+    id INTEGER PRIMARY KEY,
     player_id INTEGER NOT NULL,
     button_id INTEGER NOT NULL,
     date DATE NOT NULL,
@@ -43,16 +44,17 @@ CREATE TABLE IF NOT EXISTS breaks (
     end_time DATETIME NOT NULL
 );
 -- Score view
+DROP VIEW IF EXISTS [score];
 CREATE VIEW IF NOT EXISTS score AS
 SELECT sp.player_id,
     sp.button_id,
     sp.date,
-    COUNT(p.id) AS presses,
+    COALESCE(COUNT(p.id), 0) AS presses,
     MIN(p.timestamp) AS startedAt,
     MAX(p.timestamp) AS stoppedAt
 FROM selected_player sp
-    JOIN presses p ON sp.player_id = p.player_id
-WHERE p.timestamp BETWEEN sp.date AND sp.date || ' 23:59:59'
+    LEFT JOIN presses p ON sp.player_id = p.player_id
+    AND p.timestamp BETWEEN sp.date AND sp.date || ' 23:59:59'
 GROUP BY sp.player_id,
     sp.button_id,
     sp.date;
@@ -68,7 +70,8 @@ SELECT pl.name AS player_name,
     s.player_id,
     CASE
         WHEN s.startedAt IS NOT NULL
-        AND s.stoppedAt IS NOT NULL THEN s.presses / (
+        AND s.stoppedAt IS NOT NULL
+        AND (julianday(s.stoppedAt) - julianday(s.startedAt)) > 0 THEN s.presses / (
             (
                 (julianday(s.stoppedAt) - julianday(s.startedAt)) - (
                     SELECT COALESCE(
