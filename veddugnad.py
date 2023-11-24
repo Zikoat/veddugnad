@@ -37,8 +37,7 @@ class UpdateSignal(QObject):
 
 
 class HotkeySignal(QObject):
-    # This signal will be emitted when a hotkey is pressed
-    hotkey_pressed = pyqtSignal(object)  # The signal carries a callable object
+    hotkey_pressed = pyqtSignal(object)
 
 
 try:
@@ -315,9 +314,6 @@ class PlayerBox(QGroupBox):
         self.player_select_combo.currentIndexChanged.connect(self.on_player_changed)
         # Fetch the color for the button
         hex_color = global_repo.get_button_color(self.button_id).lstrip("#")
-
-        print(hex_color)
-        print(tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4)))
         # Convert hex color to RGB
         rgb_color = tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
 
@@ -379,7 +375,6 @@ class PlayerBox(QGroupBox):
 
     def timeout(self) -> None:
         self.timer.stop()
-        self.setStyleSheet("")  # Reset to the original style
         vedApp.update_ui()
 
     def on_edit_player_clicked(self) -> None:
@@ -389,18 +384,15 @@ class PlayerBox(QGroupBox):
 
         if selected_player_id is None:
             raise Exception("No player selected for editing")
-            # Logic to edit the player with the selected ID
-            # This might involve opening a new dialog/window where you can edit player details
+
         edit_dialog = EditPlayerDialog(selected_player_id, self)
-        edit_dialog.exec_()  # Assuming EditPlayerDialog is a QDialog or similar
+        edit_dialog.exec_()
 
 
 class EditPlayerDialog(QDialog):
     def __init__(self, player_id: int, parent: QGroupBox) -> None:
         super().__init__(parent)
         self.player_id = player_id
-        # QApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton);
-        # self.setWindowFlags(self.windowFlags().setFlag(Qt.WindowContextHelpButtonHint, false))
         main_layout = QVBoxLayout(self)
 
         self.name_edit = QLineEdit()
@@ -514,7 +506,6 @@ class HelmetSelectionWidget(QWidget):
 
         self.helmetComboBox = QComboBox()
 
-        # Add items with icons
         self.helmetComboBox.addItem(QIcon("orange-helmet.png"), "Orange")
         self.helmetComboBox.addItem(QIcon("green-helmet.png"), "Green")
         self.helmetComboBox.addItem(QIcon("red-helmet.png"), "Red")
@@ -584,7 +575,6 @@ class BreakDialog(QDialog):
         vedApp.update_ui()
 
     def closeEvent(self, _event: QCloseEvent) -> None:
-        # Ensure break continues even if the dialog is closed without clicking "Continue"
         self.onContinue()
         super().closeEvent(_event)
 
