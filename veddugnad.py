@@ -31,6 +31,14 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+class UpdateSignal(QObject):
+    update_ui_signal = pyqtSignal()
+
+
+class HotkeySignal(QObject):
+    # This signal will be emitted when a hotkey is pressed
+    hotkey_pressed = pyqtSignal(object)  # The signal carries a callable object
+
 
 class VedApp(QWidget):
     def __init__(self) -> None:
@@ -844,13 +852,6 @@ class ScoreRepository:
                 return "#FFFFFF"  # Default to white if not found or if the result is not a string
 
 
-class UpdateSignal(QObject):
-    update_ui_signal = pyqtSignal()
-
-
-class HotkeySignal(QObject):
-    # This signal will be emitted when a hotkey is pressed
-    hotkey_pressed = pyqtSignal(object)  # The signal carries a callable object
 
 
 try:
