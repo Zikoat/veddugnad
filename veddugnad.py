@@ -316,8 +316,6 @@ class PlayerBox(QGroupBox):
         # Fetch the color for the button
         hex_color = global_repo.get_button_color(self.button_id).lstrip("#")
 
-        print(hex_color)
-        print(tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4)))
         # Convert hex color to RGB
         rgb_color = tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
 
