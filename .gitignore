@@ -1,4 +1,4 @@
-myenv/
+venv/
 backup/
 *.db
 mock_hours.txt

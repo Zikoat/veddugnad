@@ -10,5 +10,5 @@ repos:
   rev: 'v1.7.0'
   hooks:
     - id: mypy
-      args: [--python-executable, .\myenv\Scripts\python.exe]
+      args: [--python-executable, .\venv\Scripts\python.exe]
       files: veddugnad.py$
