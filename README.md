@@ -30,10 +30,4 @@ mypy .\veddugnad.py --strict
 ### TODO
 create background
 quotes
-
-find and or create wallpaper
-
-like stackoverflow:
-https://stackoverflow.com/questions/4571244/creating-a-bat-file-for-python-script
-https://stackoverflow.com/a/64262038
-https://stackoverflow.com/questions/289498/running-batch-file-in-background-when-windows-boots-up?noredirect=1&lq=1
+create wallpaper
