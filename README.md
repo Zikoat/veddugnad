@@ -33,9 +33,6 @@ quotes
 
 find and or create wallpaper
 
-code:
-move images and other files to its own folder
-
 like stackoverflow:
 https://stackoverflow.com/questions/4571244/creating-a-bat-file-for-python-script
 https://stackoverflow.com/a/64262038

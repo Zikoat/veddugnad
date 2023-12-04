@@ -11,7 +11,7 @@ import keyboard
 import schedule
 from pydantic import BaseModel
 from PyQt5.QtCore import QObject, QSize, Qt, QTimer, pyqtSignal
-from PyQt5.QtGui import QBrush, QCloseEvent, QIcon, QPalette, QPixmap, QResizeEvent
+from PyQt5.QtGui import QBrush, QCloseEvent, QIcon, QPalette, QPixmap, QResizeEvent,QKeyEvent
 from PyQt5.QtWidgets import (
     QApplication,
     QComboBox,
@@ -134,8 +134,8 @@ class VedApp(QWidget):
         self.update_ui()
         self.break_dialog.exec_()
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_F11:
+    def keyPressEvent(self, event:QKeyEvent) -> None:
+        if event.key() == Qt.Key.Key_F11:
             if self.isFullScreen():
                 self.showNormal()
             else:
