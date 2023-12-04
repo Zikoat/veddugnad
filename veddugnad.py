@@ -56,6 +56,7 @@ class VedApp(QWidget):
         update_signal.update_ui_signal.connect(self.update_ui)
         self.hotkey_signal.hotkey_pressed.connect(self.execute_function)
         self.setup_scheduler()
+        self.showFullScreen()
 
     def initUI(self) -> None:
         main_layout = QHBoxLayout(self)
@@ -80,6 +81,10 @@ class VedApp(QWidget):
 
         self.leaderboard = LeaderboardWidget()
         left_column_layout.addWidget(self.leaderboard, 1)
+
+        info_text = QLabel()
+        info_text.setText("F11: Fullscreen")
+        left_column_layout.addWidget(info_text)
 
         # Layout for player boxes
         self.player_boxes: list[PlayerBox] = []
@@ -144,6 +149,15 @@ class VedApp(QWidget):
         self.break_dialog = BreakDialog(self)
         self.update_ui()
         self.break_dialog.exec_()
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_F11:
+            if self.isFullScreen():
+                self.showNormal()
+            else:
+                self.showFullScreen()
+        else:
+            super().keyPressEvent(event)
+
 
 
 class LeaderboardWidget(QScrollArea):
@@ -864,4 +878,5 @@ app = QApplication(sys.argv)
 global vedApp
 vedApp = VedApp()
 vedApp.show()
+
 sys.exit(app.exec_())
