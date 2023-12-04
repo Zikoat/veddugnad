@@ -1,3 +1,2 @@
 @echo off
-python c:\veddugnad\veddugnad.py %*
-pause
+.\venv\scripts\python c:\veddugnad\veddugnad.py %*
