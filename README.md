@@ -1,9 +1,10 @@
 # veddugnad
 
 ## installation
-1. download sqlite, extract it to a folder, and add that folder to PATH
-2. Open powershell as admin, and run the following commands:
+1. Open powershell as admin, and run the following commands:
 ```shell
+winget install SQLite.SQLite --source winget
+winget install Python.Python.3.12 --source winget
 python -m venv venv
 .\venv\scripts\activate
 pip install -r requirements.txt
@@ -30,16 +31,7 @@ mypy .\veddugnad.py --strict
 create background
 quotes
 
-delete previous windows versions
-
 find and or create wallpaper
-start program on startup
-
-install teamviewer, and test it works
-
-edit veddugnad readme
-winget install SQLite.SQLite --source winget
-winget install Python.Python.3.12 --source winget
 
 code:
 move images and other files to its own folder

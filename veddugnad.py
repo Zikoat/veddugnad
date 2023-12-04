@@ -32,22 +32,6 @@ from PyQt5.QtWidgets import (
 )
 
 
-class UpdateSignal(QObject):
-    update_ui_signal = pyqtSignal()
-
-
-class HotkeySignal(QObject):
-    # This signal will be emitted when a hotkey is pressed
-    hotkey_pressed = pyqtSignal(object)  # The signal carries a callable object
-
-
-try:
-    with open("mock_hours.txt") as file:
-        mock_hours_increment = int(file.read())
-except (FileNotFoundError, ValueError):
-    mock_hours_increment = 0
-
-
 class VedApp(QWidget):
     def __init__(self) -> None:
         super().__init__()
@@ -149,6 +133,7 @@ class VedApp(QWidget):
         self.break_dialog = BreakDialog(self)
         self.update_ui()
         self.break_dialog.exec_()
+
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_F11:
             if self.isFullScreen():
@@ -157,7 +142,6 @@ class VedApp(QWidget):
                 self.showFullScreen()
         else:
             super().keyPressEvent(event)
-
 
 
 class LeaderboardWidget(QScrollArea):
@@ -225,7 +209,7 @@ class PlayerBox(QGroupBox):
 
         self.edit_player_button = QPushButton()
         self.edit_player_button.setIcon(
-            QIcon("cog_icon.svg")
+            QIcon("./assets/cog_icon.svg")
         )  # Replace with path to your cog icon
         self.edit_player_button.setIconSize(QSize(25, 25))  # Adjust icon size as needed
 
@@ -423,7 +407,7 @@ class EditPlayerDialog(QDialog):
 
         self.delete_button = QPushButton()
         self.delete_button.setIcon(
-            QIcon("delete_icon.svg")
+            QIcon("./assets/delete_icon.svg")
         )  # Set path to your delete icon
         self.delete_button.clicked.connect(self.onDeleteClicked)
         main_layout.addWidget(self.delete_button)
@@ -527,10 +511,10 @@ class HelmetSelectionWidget(QWidget):
         self.helmetComboBox = QComboBox()
 
         # Add items with icons
-        self.helmetComboBox.addItem(QIcon("orange-helmet.png"), "Orange")
-        self.helmetComboBox.addItem(QIcon("green-helmet.png"), "Green")
-        self.helmetComboBox.addItem(QIcon("red-helmet.png"), "Red")
-        self.helmetComboBox.addItem(QIcon("blue-helmet.png"), "Blue")
+        self.helmetComboBox.addItem(QIcon("./assets/orange-helmet.png"), "Orange")
+        self.helmetComboBox.addItem(QIcon("./assets/green-helmet.png"), "Green")
+        self.helmetComboBox.addItem(QIcon("./assets/red-helmet.png"), "Red")
+        self.helmetComboBox.addItem(QIcon("./assets/blue-helmet.png"), "Blue")
 
         layout.addWidget(self.helmetComboBox)
         self.setLayout(layout)
@@ -860,8 +844,23 @@ class ScoreRepository:
                 return "#FFFFFF"  # Default to white if not found or if the result is not a string
 
 
-COUNT_FILE = "counters.json"
-BG_IMAGE_FILE = "bg_white.png"
+class UpdateSignal(QObject):
+    update_ui_signal = pyqtSignal()
+
+
+class HotkeySignal(QObject):
+    # This signal will be emitted when a hotkey is pressed
+    hotkey_pressed = pyqtSignal(object)  # The signal carries a callable object
+
+
+try:
+    with open("mock_hours.txt") as file:
+        mock_hours_increment = int(file.read())
+except (FileNotFoundError, ValueError):
+    mock_hours_increment = 0
+
+
+BG_IMAGE_FILE = "./assets/bg_white.png"
 BUTTON_TIMEOUT_SECONDS = 3
 DEBUG_MODE = False  # Set to False to hide mock controls
 
