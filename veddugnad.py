@@ -10,8 +10,16 @@ from sqlite3 import Connection, Cursor
 import keyboard
 import schedule
 from pydantic import BaseModel
-from PyQt5.QtCore import QObject, QSize, Qt, QTimer, pyqtSignal
-from PyQt5.QtGui import QBrush, QCloseEvent, QIcon, QPalette, QPixmap, QResizeEvent,QKeyEvent
+from PyQt5.QtCore import QObject, QSharedMemory, QSize, Qt, QTimer, pyqtSignal
+from PyQt5.QtGui import (
+    QBrush,
+    QCloseEvent,
+    QIcon,
+    QKeyEvent,
+    QPalette,
+    QPixmap,
+    QResizeEvent,
+)
 from PyQt5.QtWidgets import (
     QApplication,
     QComboBox,
@@ -31,6 +39,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+
 class UpdateSignal(QObject):
     update_ui_signal = pyqtSignal()
 
@@ -43,6 +52,12 @@ class HotkeySignal(QObject):
 class VedApp(QWidget):
     def __init__(self) -> None:
         super().__init__()
+        # only allow a single instance
+        self.sharedMemory = QSharedMemory("UniqueAppIdentifier_VedApp")
+        if not self.sharedMemory.create(1):
+            print("Application already running.")
+            sys.exit(1)
+
         self.hotkey_signal = HotkeySignal()
         self.initUI()
         update_signal.update_ui_signal.connect(self.update_ui)
@@ -142,7 +157,7 @@ class VedApp(QWidget):
         self.update_ui()
         self.break_dialog.exec_()
 
-    def keyPressEvent(self, event:QKeyEvent) -> None:
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key.Key_F11:
             if self.isFullScreen():
                 self.showNormal()
@@ -850,8 +865,6 @@ class ScoreRepository:
                 return result[0]
             else:
                 return "#FFFFFF"  # Default to white if not found or if the result is not a string
-
-
 
 
 try:
