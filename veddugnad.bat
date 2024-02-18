@@ -14,9 +14,9 @@ if %ERRORLEVEL%==0 (
     copy /Y highscores.db highscores_backup.db
     git add -f highscores_backup.db
 
-    :: Commit the backup and push it directly to the db-backup branch on the remote
+    :: Commit the backup. Note: This commit will be made on the current branch (main).
     git commit -m "Backup of highscores.db on %DATE% %TIME%"
-    git push origin HEAD:refs/heads/db-backup
+    git push
 
     :: Update the 'prod' tag to the current commit on main branch
     git tag -f prod
