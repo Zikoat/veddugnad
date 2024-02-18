@@ -11,7 +11,15 @@ import keyboard
 import schedule
 from pydantic import BaseModel
 from PyQt5.QtCore import QObject, QSize, Qt, QTimer, pyqtSignal
-from PyQt5.QtGui import QBrush, QCloseEvent, QIcon, QPalette, QPixmap, QResizeEvent,QKeyEvent
+from PyQt5.QtGui import (
+    QBrush,
+    QCloseEvent,
+    QIcon,
+    QKeyEvent,
+    QPalette,
+    QPixmap,
+    QResizeEvent,
+)
 from PyQt5.QtWidgets import (
     QApplication,
     QComboBox,
@@ -30,6 +38,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
 
 class UpdateSignal(QObject):
     update_ui_signal = pyqtSignal()
@@ -142,7 +151,7 @@ class VedApp(QWidget):
         self.update_ui()
         self.break_dialog.exec_()
 
-    def keyPressEvent(self, event:QKeyEvent) -> None:
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key.Key_F11:
             if self.isFullScreen():
                 self.showNormal()
@@ -845,8 +854,6 @@ class ScoreRepository:
                 return result[0]
             else:
                 return "#FFFFFF"  # Default to white if not found or if the result is not a string
-
-
 
 
 try:
