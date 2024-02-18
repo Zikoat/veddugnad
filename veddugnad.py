@@ -398,7 +398,6 @@ class PlayerBox(QGroupBox):
 
     def timeout(self) -> None:
         self.timer.stop()
-        self.setStyleSheet("")  # Reset to the original style
         vedApp.update_ui()
 
     def on_edit_player_clicked(self) -> None:
@@ -408,18 +407,15 @@ class PlayerBox(QGroupBox):
 
         if selected_player_id is None:
             raise Exception("No player selected for editing")
-            # Logic to edit the player with the selected ID
-            # This might involve opening a new dialog/window where you can edit player details
+
         edit_dialog = EditPlayerDialog(selected_player_id, self)
-        edit_dialog.exec_()  # Assuming EditPlayerDialog is a QDialog or similar
+        edit_dialog.exec_()
 
 
 class EditPlayerDialog(QDialog):
     def __init__(self, player_id: int, parent: QGroupBox) -> None:
         super().__init__(parent)
         self.player_id = player_id
-        # QApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton);
-        # self.setWindowFlags(self.windowFlags().setFlag(Qt.WindowContextHelpButtonHint, false))
         main_layout = QVBoxLayout(self)
 
         self.name_edit = QLineEdit()
@@ -603,7 +599,6 @@ class BreakDialog(QDialog):
         vedApp.update_ui()
 
     def closeEvent(self, _event: QCloseEvent) -> None:
-        # Ensure break continues even if the dialog is closed without clicking "Continue"
         self.onContinue()
         super().closeEvent(_event)
 
@@ -672,6 +667,14 @@ class ScoreRepository:
             )
 
     def get_leaderboard(self) -> list[tuple[str, str, int, float]]:
+        try:
+            with open("reset_leaderboard.txt") as file:
+                reset_date = file.read().strip()  # Ensure we strip any whitespace
+                print("Resetting leaderboard to date:", reset_date)
+        except FileNotFoundError:
+            # If the file doesn't exist, default to a date that includes all scores
+            reset_date = "1900-01-01"  # Very early date to ensure all scores are included
+
         with DatabaseContext() as cursor:
             cursor.execute(
                 """
@@ -681,9 +684,10 @@ class ScoreRepository:
                     ds.score_per_hour
                 FROM daily_scores ds
                 JOIN player p ON ds.player_id = p.id
-                WHERE ds.score > 0
+                WHERE ds.score > 0 AND ds.date >= ?
                 ORDER BY ds.score DESC, ds.score_per_hour ASC;
-                """
+                """,
+                (reset_date,),
             )
             # formatted_date:str, name:str, score:int, score_per_hour:float
             return cursor.fetchall()
