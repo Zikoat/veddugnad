@@ -96,7 +96,7 @@ class VedApp(QWidget):
         # Layout for player boxes
         self.player_boxes: list[PlayerBox] = []
         player_boxes_layout = QHBoxLayout()
-        for i in range(0, 6, 2):  # Creating pairs
+        for i in range(0, 4, 2):  # Creating pairs
             pair_layout = QVBoxLayout()
 
             for j in range(2):  # Two player boxes per pair
