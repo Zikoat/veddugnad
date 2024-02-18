@@ -28,6 +28,7 @@ mypy .\veddugnad.py --strict
 ```
 
 ### TODO
-create background
-quotes
-create wallpaper
+- [ ] cutoff date
+- [ ] create background
+- [ ] quotes
+- [ ] create wallpaper

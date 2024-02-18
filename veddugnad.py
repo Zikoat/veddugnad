@@ -661,6 +661,14 @@ class ScoreRepository:
             )
 
     def get_leaderboard(self) -> list[tuple[str, str, int, float]]:
+        try:
+            with open("reset_leaderboard.txt") as file:
+                reset_date = file.read().strip()  # Ensure we strip any whitespace
+                print("Resetting leaderboard to date:", reset_date)
+        except FileNotFoundError:
+            # If the file doesn't exist, default to a date that includes all scores
+            reset_date = "1900-01-01"  # Very early date to ensure all scores are included
+
         with DatabaseContext() as cursor:
             cursor.execute(
                 """
@@ -670,9 +678,10 @@ class ScoreRepository:
                     ds.score_per_hour
                 FROM daily_scores ds
                 JOIN player p ON ds.player_id = p.id
-                WHERE ds.score > 0
+                WHERE ds.score > 0 AND ds.date >= ?
                 ORDER BY ds.score DESC, ds.score_per_hour ASC;
-                """
+                """,
+                (reset_date,),
             )
             # formatted_date:str, name:str, score:int, score_per_hour:float
             return cursor.fetchall()
