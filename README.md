@@ -1,14 +1,15 @@
 # veddugnad
 
 ## installation
-1. download sqlite, extract it to a folder, and add that folder to PATH
-2. Open powershell as admin, and run the following commands:
+1. Open powershell as admin, and run the following commands:
 ```shell
-python3 -m venv myenv
-.\myenv\scripts\activate
+winget install SQLite.SQLite --source winget
+winget install Python.Python.3.12 --source winget
+python -m venv venv
+.\venv\scripts\activate
 pip install -r requirements.txt
 Get-Content create_db.sql | sqlite3 highscores.db
-python3 veddugnad.py
+python veddugnad.py
 ```
 
 ## update requirements.txt
@@ -29,3 +30,4 @@ mypy .\veddugnad.py --strict
 ### TODO
 create background
 quotes
+create wallpaper

@@ -1,4 +1,5 @@
-myenv/
+venv/
 backup/
 *.db
 mock_hours.txt
+.mypy_cache

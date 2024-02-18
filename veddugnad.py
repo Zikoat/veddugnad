@@ -11,7 +11,7 @@ import keyboard
 import schedule
 from pydantic import BaseModel
 from PyQt5.QtCore import QObject, QSize, Qt, QTimer, pyqtSignal
-from PyQt5.QtGui import QBrush, QCloseEvent, QIcon, QPalette, QPixmap, QResizeEvent
+from PyQt5.QtGui import QBrush, QCloseEvent, QIcon, QPalette, QPixmap, QResizeEvent,QKeyEvent
 from PyQt5.QtWidgets import (
     QApplication,
     QComboBox,
@@ -31,20 +31,13 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-
 class UpdateSignal(QObject):
     update_ui_signal = pyqtSignal()
 
 
 class HotkeySignal(QObject):
-    hotkey_pressed = pyqtSignal(object)
-
-
-try:
-    with open("mock_hours.txt") as file:
-        mock_hours_increment = int(file.read())
-except (FileNotFoundError, ValueError):
-    mock_hours_increment = 0
+    # This signal will be emitted when a hotkey is pressed
+    hotkey_pressed = pyqtSignal(object)  # The signal carries a callable object
 
 
 class VedApp(QWidget):
@@ -55,6 +48,7 @@ class VedApp(QWidget):
         update_signal.update_ui_signal.connect(self.update_ui)
         self.hotkey_signal.hotkey_pressed.connect(self.execute_function)
         self.setup_scheduler()
+        self.showFullScreen()
 
     def initUI(self) -> None:
         main_layout = QHBoxLayout(self)
@@ -79,6 +73,10 @@ class VedApp(QWidget):
 
         self.leaderboard = LeaderboardWidget()
         left_column_layout.addWidget(self.leaderboard, 1)
+
+        info_text = QLabel()
+        info_text.setText("F11: Fullscreen")
+        left_column_layout.addWidget(info_text)
 
         # Layout for player boxes
         self.player_boxes: list[PlayerBox] = []
@@ -143,6 +141,15 @@ class VedApp(QWidget):
         self.break_dialog = BreakDialog(self)
         self.update_ui()
         self.break_dialog.exec_()
+
+    def keyPressEvent(self, event:QKeyEvent) -> None:
+        if event.key() == Qt.Key.Key_F11:
+            if self.isFullScreen():
+                self.showNormal()
+            else:
+                self.showFullScreen()
+        else:
+            super().keyPressEvent(event)
 
 
 class LeaderboardWidget(QScrollArea):
@@ -210,7 +217,7 @@ class PlayerBox(QGroupBox):
 
         self.edit_player_button = QPushButton()
         self.edit_player_button.setIcon(
-            QIcon("cog_icon.svg")
+            QIcon("./assets/cog_icon.svg")
         )  # Replace with path to your cog icon
         self.edit_player_button.setIconSize(QSize(25, 25))  # Adjust icon size as needed
 
@@ -314,6 +321,7 @@ class PlayerBox(QGroupBox):
         self.player_select_combo.currentIndexChanged.connect(self.on_player_changed)
         # Fetch the color for the button
         hex_color = global_repo.get_button_color(self.button_id).lstrip("#")
+
         # Convert hex color to RGB
         rgb_color = tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
 
@@ -403,7 +411,7 @@ class EditPlayerDialog(QDialog):
 
         self.delete_button = QPushButton()
         self.delete_button.setIcon(
-            QIcon("delete_icon.svg")
+            QIcon("./assets/delete_icon.svg")
         )  # Set path to your delete icon
         self.delete_button.clicked.connect(self.onDeleteClicked)
         main_layout.addWidget(self.delete_button)
@@ -506,10 +514,11 @@ class HelmetSelectionWidget(QWidget):
 
         self.helmetComboBox = QComboBox()
 
-        self.helmetComboBox.addItem(QIcon("orange-helmet.png"), "Orange")
-        self.helmetComboBox.addItem(QIcon("green-helmet.png"), "Green")
-        self.helmetComboBox.addItem(QIcon("red-helmet.png"), "Red")
-        self.helmetComboBox.addItem(QIcon("blue-helmet.png"), "Blue")
+        # Add items with icons
+        self.helmetComboBox.addItem(QIcon("./assets/orange-helmet.png"), "Orange")
+        self.helmetComboBox.addItem(QIcon("./assets/green-helmet.png"), "Green")
+        self.helmetComboBox.addItem(QIcon("./assets/red-helmet.png"), "Red")
+        self.helmetComboBox.addItem(QIcon("./assets/blue-helmet.png"), "Blue")
 
         layout.addWidget(self.helmetComboBox)
         self.setLayout(layout)
@@ -838,8 +847,16 @@ class ScoreRepository:
                 return "#FFFFFF"  # Default to white if not found or if the result is not a string
 
 
-COUNT_FILE = "counters.json"
-BG_IMAGE_FILE = "bg_white.png"
+
+
+try:
+    with open("mock_hours.txt") as file:
+        mock_hours_increment = int(file.read())
+except (FileNotFoundError, ValueError):
+    mock_hours_increment = 0
+
+
+BG_IMAGE_FILE = "./assets/bg_white.png"
 BUTTON_TIMEOUT_SECONDS = 3
 DEBUG_MODE = False  # Set to False to hide mock controls
 
@@ -856,4 +873,5 @@ app = QApplication(sys.argv)
 global vedApp
 vedApp = VedApp()
 vedApp.show()
+
 sys.exit(app.exec_())

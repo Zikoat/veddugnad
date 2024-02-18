@@ -3,6 +3,6 @@
         "editor.defaultFormatter": "ms-python.black-formatter"
       },
       "mypy.runUsingActiveInterpreter": true,
-      "mypy.dmypyExecutable": "C:\\Dev\\veddugnad\\myenv\\Scripts\\dmypy.exe"
+      "mypy.dmypyExecutable": "C:\\veddugnad\\.venv\\Scripts\\dmypy.exe"
     
 }
