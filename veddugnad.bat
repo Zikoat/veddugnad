@@ -12,7 +12,7 @@ if %ERRORLEVEL%==0 (
 
     :: Backup the SQLite database by copying it and adding it to the staging area
     copy /Y highscores.db highscores_backup.db
-    git add highscores_backup.db
+    git add -f highscores_backup.db
 
     :: Commit the backup and push it directly to the db-backup branch on the remote
     git commit -m "Backup of highscores.db on %DATE% %TIME%"
@@ -28,5 +28,5 @@ if %ERRORLEVEL%==0 (
 )
 
 echo Starting the application...
-.\venv\Scripts\python c:\veddugnad\veddugnad.py %*
+.\venv\Scripts\python .\veddugnad.py %*
 pause
